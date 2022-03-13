@@ -186,9 +186,6 @@ export const Labeler = () => {
     // 支持状态跟踪 status: still, loading, done
     const [status, setStatus] = useState<string>("still");
 
-    // 打标数据记录
-    const labelState = useAppSelector((state) => state.labeler.labelData);
-
     return (
         <div className={styles.wrapper}>
             <nav className={styles.nav}>
