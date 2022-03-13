@@ -1,0 +1,41 @@
+.menu {
+    display: block;
+    width: 32px;
+    height: auto;
+    cursor: pointer;
+    visibility: true;
+
+    /* position: relative; */
+}
+
+.menu .line1 {
+    transform-origin: top left;
+}
+
+.menu .line3 {
+    transform-origin: bottom left;
+}
+
+.menu[data-on=true] .line1 {
+    transform: rotate(45deg);
+}
+
+.menu[data-on=true] .line2 {
+    opacity: 0;
+}
+
+.menu[data-on=true] .line3 {
+    transform: rotate(-45deg);
+}
+
+.menu .line {
+    width: 21px;
+    height: 2px;
+    margin-bottom: 5px;
+    background-color: black;
+    transition: all 0.5s ease-in-out;
+}
+
+.menu .line:last-child {
+    margin-bottom: 0;
+}
