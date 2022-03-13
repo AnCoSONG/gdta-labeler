@@ -1,8 +1,11 @@
 // import styles from './index.module.scss';
 import commonStyles from '../Common.module.scss';
-import { useState } from 'react';
+import {LabelDataPayload} from '../../LabelSlice'
+import { useAppDispatch, useAppSelector } from '../../../../app/hooks';
+import { setLabelData } from '../../LabelSlice'
 export const Question1 = () => {
-    const [selected, setSelected] = useState(true);
+    const dispatch = useAppDispatch()
+    const state = useAppSelector(state => state.labeler.labelData.q1)
     return (
         <div className={commonStyles.question_card}>
             <div className={commonStyles.question_card_title}>
@@ -10,16 +13,16 @@ export const Question1 = () => {
             </div>
             <div
                 className={commonStyles.line_btn}
-                onClick={() => setSelected(true)}
-                data-selected={selected}
+                onClick={() => dispatch(setLabelData({question: "q1", data: true}))}
+                data-selected={state}
             >
                 是
             </div>
             <div
                 className={commonStyles.line_btn}
-                onClick={() => setSelected(false)}
-                data-selected={!selected}
-                data-last={true}
+                onClick={() => dispatch(setLabelData({question: "q1", data: false}))}
+                data-selected={!state}
+                data-last
             >
                 否
             </div>

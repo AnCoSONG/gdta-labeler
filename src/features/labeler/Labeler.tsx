@@ -9,6 +9,7 @@ import { HistoryItem } from "./HistoryItem";
 import { Q1, Q2, Q3, Q4 } from "./Questions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import throttle from "lodash.throttle";
+import { setLabelData } from './LabelSlice'
 import { Tag, Dropdown } from "element-react";
 import {
     faAngleLeft,
@@ -185,6 +186,9 @@ export const Labeler = () => {
     // 支持状态跟踪 status: still, loading, done
     const [status, setStatus] = useState<string>("still");
 
+    // 打标数据记录
+    const labelState = useAppSelector((state) => state.labeler.labelData);
+
     return (
         <div className={styles.wrapper}>
             <nav className={styles.nav}>
@@ -323,11 +327,10 @@ export const Labeler = () => {
                             className={styles.label_cards_wrapper}
                             // style={{ height: `${calcedHeight.current}px` }}
                         >
-                            <Q1></Q1>
+                            <Q1/>
                             <Q2></Q2>
                             <Q3></Q3>
                             <Q4></Q4>
-                            {/* <Q3></Q3> */}
                         </div>
                         <div className={styles.label_confirm}>
                             <div className={styles.label_confirm_skip}>

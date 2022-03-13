@@ -9,11 +9,13 @@
     box-sizing: border-box;
     // padding: 20px;
     margin-bottom: 15px;
+    transition: opacity 0.5s cubic-bezier(0.445, 0.05, 0.55, 0.95);
 
     &[data-inactive="true"] {
         opacity: 0.5;
         user-select: none;
         pointer-events: none;
+        // cursor:not-allowed;
     }
     &:last-child {
         margin-bottom: 0;
