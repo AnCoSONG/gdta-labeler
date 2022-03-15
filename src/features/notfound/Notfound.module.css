@@ -4,8 +4,8 @@
     align-items: center;
     justify-content: center;
     /* height: 100vh; */
-    background-color: black;
-    color: white;
+    background-color: white;
+    color: black;
     user-select: none;
     overflow: hidden;
   }

@@ -4,17 +4,15 @@ import { v4 } from 'uuid'
 type UserType = {
     id: string,
     username: string,
-    password?: string,
     invitecode?: string,
-    login?: boolean
+    avatar: string
 }
 
 export const initState: UserType = {
     id: "",
     username: "",
-    password: "",
     invitecode: "",
-    login: false
+    avatar: "",
 }
 
 // async login template 1
@@ -48,22 +46,15 @@ export const userSlice = createSlice({
     name: 'user',
     initialState: initState,
     reducers: {
-        setLogin: (state, action: PayloadAction<UserType>) => {
-            state.id = v4()
-            // 实际情况调用这些去获取 id
+        setUserInfo: (state, action: PayloadAction<UserType>) => {
+            state.id = action.payload.id
             state.username = action.payload.username
-            state.password = action.payload.password
+            state.avatar = action.payload.avatar
             state.invitecode = action.payload.invitecode
-            state.login = true
-            console.log(`user ${state.username} logged in`)
         },
-        setLogout: (state) => {
-            state.login = false
-            console.log(`user ${state.username} logged out`)
-        }
     }
 })
 
 
-export const { setLogin, setLogout } = userSlice.actions
+export const { setUserInfo } = userSlice.actions
 export default userSlice.reducer

@@ -1,16 +1,15 @@
-import React, { useEffect, useState, createRef, useRef } from "react";
+import React, { useEffect, useState, useRef, } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { setLogout } from "../user/userSlice";
 import styles from "./Labeler.module.scss";
-import { getDataUrl, seed } from "../../utils";
+// import { getDataUrl, seed } from "../../utils";
+import { axios } from "../../utils";
 import { Menu } from "../../comps/Menu";
 import { HistoryItem } from "./HistoryItem";
 import { Q1, Q2, Q3, Q4 } from "./Questions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import throttle from "lodash.throttle";
-import { setLabelData } from './LabelSlice'
-import { Tag, Dropdown } from "element-react";
+import { Tag, Dropdown } from "element-react/next";
 import {
     faAngleLeft,
     faAngleRight,
@@ -24,6 +23,9 @@ import {
     faClose,
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import { error, success, warn } from "../../utils/notify";
+import { setUserInfo } from "../user/userSlice";
+import { fetchImageDataAsync } from "./LabelSlice";
 
 const getTransform = (DOM: Element) => {
     let arr = getComputedStyle(DOM).transform.split(",");
@@ -41,6 +43,7 @@ export const Labeler = () => {
     const userState = useAppSelector((state) => state.user);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+
     // 支持历史记录 =========================
     const historyState = useAppSelector((state) => state.labeler.history);
     const [historyOn, setHistoryOn] = useState(false);
@@ -50,22 +53,64 @@ export const Labeler = () => {
     // 支持历史记录 =========================
 
     // 登录态验证 =========================
+    // 检测本地是否有token，无则一定重定向到登录页
     useEffect(() => {
-        // on mount
-        if (userState.login === false) {
-            console.log("Labeler: user is not logged in");
+        const token = localStorage.getItem("token");
+        if (token === null) {
+            console.log("Labeler: token is not found");
+            error("请先登录");
+            // Message.error({message: "请先登录", customClass: "message", duration: 3000});
             navigate("/login");
+        } else {
+            // 如果有token 通过请求后端接口检测token是否过期，没过期则刷新token
+            const uid = localStorage.getItem("uid");
+            axios
+                .get(`/labeler/${uid}`)
+                .then((res) => {
+                    // console.log(res)
+                    dispatch(
+                        setUserInfo({
+                            username: res.data.data.username,
+                            id: res.data.data._id,
+                            avatar: res.data.data.avatar,
+                            invitecode: res.data.data.invitecode,
+                        })
+                    );
+                    if (res.status === 200) {
+                        if (res.data.auth.status === 1) {
+                            console.log("Token Refreshed");
+                            success(
+                                res.data.data.username +
+                                    ", 欢迎回来(令牌已刷新)."
+                            );
+                        } else {
+                            console.log("Labeler: token is valid");
+                            success(res.data.data.username + ", 欢迎回来");
+                        }
+                    } else {
+                        console.log("Labeler: token is invalid");
+                        localStorage.removeItem("token");
+                        error("登录失效，请重新登录");
+                        navigate("/login");
+                    }
+                })
+                .catch((err) => {
+                    console.log(err);
+                    error(err.name);
+                });
         }
-    }, [navigate, userState.login]);
+    }, [dispatch, navigate]);
     // 登录态验证 =========================
 
     // 支持图像动态加载和初始化 =========================
-    const imgRef = createRef<HTMLImageElement>();
-    const contentRef = createRef<HTMLDivElement>();
+    // const imgRef = createRef<HTMLImageElement>();
+    const imgRef = useRef<HTMLImageElement>(null);
+    // const contentRef = createRef<HTMLDivElement>();
+    const contentRef = useRef<HTMLDivElement>(null);
     const [imgLoaded, setImgLoaded] = useState(false);
     // 支持图像的放大查看
-    const imgShowerBox = createRef<HTMLDivElement>();
-    const imgShower = createRef<HTMLImageElement>();
+    const imgShowerBox = useRef<HTMLDivElement>(null);
+    const imgShower = useRef<HTMLImageElement>(null);
     useEffect(() => {
         if (!imgLoaded) {
             console.log("Labeler: img is not loaded");
@@ -105,7 +150,7 @@ export const Labeler = () => {
     const onMousemovestart = (e: React.MouseEvent) => {
         // console.log("start", e);
         dragging.current = true;
-        // 获取新的便=偏移中心
+        // 获取新的偏移中心
         oldLeft.current = e.clientX - getTransform(imgRef.current!).transX;
         oldTop.current = e.clientY - getTransform(imgRef.current!).transY;
     };
@@ -183,8 +228,100 @@ export const Labeler = () => {
     // }, [calcedHeight, innerBox, confirmBar]);
     // 支持纵向滚动（因为flex：1导致无法滚动） ======================================
 
-    // 支持状态跟踪 status: still, loading, done
-    const [status, setStatus] = useState<string>("still");
+    // 获取一张打标图像 =============================
+    const labelImage = useAppSelector((state) => state.labeler.labelImage);
+    useEffect(() => {
+        console.log('登录后首次取数据')
+        if (userState.id !== "") {
+            // 当用户状态已经获取时取数据
+            dispatch(fetchImageDataAsync(userState.id));
+        }
+    }, [dispatch, userState]);
+
+    useEffect(() => {
+        localStorage.setItem('currentImg', JSON.stringify(labelImage));
+        console.log('已设置currentImg')
+    }, [labelImage])
+    // 获取一张打标图像 =============================
+
+    // 支持打标状态跟踪 status: still, loading, next
+    const [confirmBtnStatus, setConfirmBtnStatus] = useState<string>("still");
+    // still, loading
+    const [skipBtnStatus, setSkipBtnStatus] = useState<string>("still");
+    const labelData = useAppSelector((state) => state.labeler.labelData);
+    const onConfirmClick = async (e: React.MouseEvent) => {
+        if (skipBtnStatus === 'loading') {
+            error ('请等待跳过操作完成')
+            return 
+        }
+        if (confirmBtnStatus === "still") {
+            setConfirmBtnStatus("loading");
+            // check if the image is already labeled
+            if(labelData.q1) {
+                // 如果其他元素都是false，则说明没有标注过
+                const isQ2Filled = labelData.q2.some(item => item === true)
+                const isQ3Filled = labelData.q3.some(item => item === true)
+                const isQ4Filled = labelData.q4.some(item => item === true)
+                const result = isQ2Filled && isQ3Filled && isQ4Filled
+                console.log(result, isQ2Filled, isQ3Filled, isQ4Filled)
+                if (!result) {
+                    error('当您认为图像有效时，需要完成在下方完成标注')
+                    setConfirmBtnStatus('still')
+                    return;
+                }
+            }
+            // 上传打标记录
+            const res = await axios.post('/record', {
+                img_id: labelImage._id,
+                labeler_id: userState.id,
+                valid: labelData.q1,
+                styles: labelData.q2,
+                created_time: labelImage.created_time,
+                audience_gender: labelData.q3,
+                audience_age: labelData.q4,
+                finished: true
+            }).catch(err => {
+                setConfirmBtnStatus('still')
+                error(err.name)
+            })
+            if (res) {
+                if (res.status === 200 || res.status === 201) {
+                    success('标注信息已上传')
+                    localStorage.removeItem('currentImg');
+                    console.log('已清除currentImg')
+                    setConfirmBtnStatus('next');
+                } else {
+                    // console.error(res)
+                    error('上传失败 '+ res.statusText)
+                    setConfirmBtnStatus('still')
+                    throw new Error('失败')
+                }
+            }
+        } else if (confirmBtnStatus === "loading") {
+            warn('请等待确认操作完成');
+            return false;
+        } else if (confirmBtnStatus === "next") {
+            // 下一张
+            await dispatch(fetchImageDataAsync(userState.id));
+            // 完成后更新
+            setConfirmBtnStatus("still");
+        }
+    }
+
+    async function onSkipClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+        if (confirmBtnStatus === 'still') {
+            if (skipBtnStatus === 'still') {
+                // 跳过表示打标人不太确定这张海报的标签，选择跳过
+                setSkipBtnStatus('loading');
+                await dispatch(fetchImageDataAsync(userState.id))
+                setSkipBtnStatus('still')
+            }
+        } else {
+            error('您已选择确认，请完成确认操作')
+        }
+    }
+
+    const ALLDONE = useAppSelector((state) => state.labeler.ALLDONE);
 
     return (
         <div className={styles.wrapper}>
@@ -197,27 +334,39 @@ export const Labeler = () => {
                     <div className={styles.btn}>DOC</div>
                     <div className={styles.btn}>HELP</div>
                     <Dropdown
-                    onCommand={(e) => {
-                        switch (e) {
-                            case 'exit':
-                                dispatch(setLogout())
-                                break
-                            default:
-                                break
-                        }
-                    }}
+                        onCommand={(e) => {
+                            switch (e) {
+                                case "exit":
+                                    localStorage.removeItem("token");
+                                    navigate("/login");
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }}
                         menu={
                             <Dropdown.Menu
-                                style={{ width: "150px", fontSize:'0.9rem', fontWeight: '400' }}
+                                style={{
+                                    width: "150px",
+                                    fontSize: "0.9rem",
+                                    fontWeight: "400",
+                                }}
                             >
-                                <Dropdown.Item>当前已完成999条</Dropdown.Item>
-                                <Dropdown.Item command="exit" divided>退出</Dropdown.Item>
+                                <Dropdown.Item>
+                                    用户名: {userState.username}
+                                </Dropdown.Item>
+                                <Dropdown.Item>
+                                    邀请码: {userState.invitecode}
+                                </Dropdown.Item>
+                                <Dropdown.Item command="exit" divided>
+                                    退出
+                                </Dropdown.Item>
                             </Dropdown.Menu>
                         }
                     >
                         <div className={styles.user}>
                             <img
-                                src={`https://avatars.dicebear.com/api/personas/123.svg`}
+                                src={userState.avatar}
                                 alt="avatar"
                                 width={32}
                                 height={32}
@@ -226,7 +375,7 @@ export const Labeler = () => {
                     </Dropdown>
                 </div>
             </nav>
-            <main className={styles.main}>
+            <main className={styles.main} data-alldone={ALLDONE}>
                 {/* Grid Layout */}
                 <div className={styles.main_board_wrapper}>
                     <div className={styles.main_board_inner}>
@@ -236,7 +385,7 @@ export const Labeler = () => {
                                     styles.main_board_inner_title_wrapper_title
                                 }
                             >
-                                Image Title
+                                {labelImage.title}
                             </div>
                             <div
                                 className={
@@ -247,23 +396,25 @@ export const Labeler = () => {
                                     <FontAwesomeIcon
                                         icon={faIdCard}
                                     ></FontAwesomeIcon>
-                                    <span>123</span>
+                                    <span>{labelImage._id}</span>
                                 </div>
                                 <div>
                                     <FontAwesomeIcon
                                         icon={faUserFriends}
                                     ></FontAwesomeIcon>
-                                    <span>Mark.Twin</span>
+                                    <span>
+                                        {labelImage.author ?? "Unknown"}
+                                    </span>
                                 </div>
                                 <div>
                                     <FontAwesomeIcon
                                         icon={faClock}
                                     ></FontAwesomeIcon>
-                                    <span>2020.02.04</span>
+                                    <span>{labelImage.created_time}</span>
                                 </div>
                                 <div>
                                     <FontAwesomeIcon icon={faAtom} />
-                                    <span>Behance</span>
+                                    <span>{labelImage.source}</span>
                                 </div>
                                 <div
                                     className={
@@ -274,20 +425,16 @@ export const Labeler = () => {
                                         icon={faTags}
                                     ></FontAwesomeIcon>
                                     {/* 这里根据后端数据 */}
-                                    <span>
-                                        <Tag type="primary">Abstract</Tag>
-                                    </span>
-                                    <span>
-                                        <Tag type="primary">Modern Design</Tag>
-                                    </span>
-                                    <span>
-                                        <Tag type="primary">
-                                            Some thing else...
-                                        </Tag>
-                                    </span>
-                                    <span>
-                                        <Tag type="primary">Posters</Tag>
-                                    </span>
+                                    {labelImage.tags &&
+                                        labelImage.tags.map((tag, index) => {
+                                            return (
+                                                <span key={tag + index}>
+                                                    <Tag type="primary">
+                                                        {tag}
+                                                    </Tag>
+                                                </span>
+                                            );
+                                        })}
                                 </div>
                             </div>
                         </div>
@@ -307,7 +454,7 @@ export const Labeler = () => {
                             >
                                 <img
                                     ref={imgRef}
-                                    src="https://picsum.photos/800/500"
+                                    src={labelImage.src}
                                     alt=""
                                     onLoadStart={() => setImgLoaded(false)}
                                     onLoad={() => setImgLoaded(true)}
@@ -324,42 +471,22 @@ export const Labeler = () => {
                             className={styles.label_cards_wrapper}
                             // style={{ height: `${calcedHeight.current}px` }}
                         >
-                            <Q1/>
-                            <Q2></Q2>
-                            <Q3></Q3>
-                            <Q4></Q4>
+                            <Q1 />
+                            <Q2 />
+                            <Q3 />
+                            <Q4 />
                         </div>
                         <div className={styles.label_confirm}>
-                            <div className={styles.label_confirm_skip}>
+                            <div className={styles.label_confirm_skip}
+                            onClick={(e) => onSkipClick(e)}>
                                 跳过
                             </div>
                             <div
                                 className={styles.label_confirm_confirm}
-                                onClick={() => {
-                                    switch (status) {
-                                        case "still":
-                                            // 检查是否填写完成
-                                            // 或者未完成无法填写
-                                            setStatus("loading");
-                                            setTimeout(() => {
-                                                setStatus("done");
-                                            }, 1000);
-                                            break;
-                                        case "loading":
-                                            // 加载时无法点击
-                                            break;
-                                        case "done":
-                                            // 切换到下一个图像
-                                            // 重新展示确认
-                                            setStatus('still');
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }}
+                                onClick={(e) => onConfirmClick(e)}
                             >
                                 {(() => {
-                                    switch (status) {
+                                    switch (confirmBtnStatus) {
                                         case "still":
                                             return "确认";
                                         case "loading":
@@ -369,7 +496,7 @@ export const Labeler = () => {
                                                     spin
                                                 ></FontAwesomeIcon>
                                             );
-                                        case "done":
+                                        case "next":
                                             return "下一个";
                                         default:
                                             return "确认";
@@ -453,3 +580,4 @@ export const Labeler = () => {
         </div>
     );
 };
+

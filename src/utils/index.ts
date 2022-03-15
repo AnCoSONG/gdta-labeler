@@ -1,3 +1,5 @@
+import _axios from "./axios";
+import crypto from 'crypto-js'
 export const seed = (upper: number) => {
     return Number(Math.random() * upper).toFixed(0)
 }
@@ -12,4 +14,15 @@ export function getDataUrl(img:HTMLImageElement) {
     // Draw the image
     ctx.drawImage(img, 0, 0);
     return canvas.toDataURL('image/jpeg');
- }
+}
+
+export const axios = _axios
+
+export const checkChar = (str: string) => {
+    return /^[a-zA-Z0-9_]+$/.test(str)
+} 
+
+export const cryptolize = (str: string) => {
+    // console.log(crypto.SHA256(str).toString())
+    return crypto.SHA256(str).toString()
+}
