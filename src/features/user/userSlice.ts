@@ -52,9 +52,16 @@ export const userSlice = createSlice({
             state.avatar = action.payload.avatar
             state.invitecode = action.payload.invitecode
         },
+        initUserState: (state) => {
+            state.id = ""
+            state.username = ""
+            state.avatar = ""
+            state.invitecode = ""
+            console.log('inited', state)
+        }
     }
 })
 
 
-export const { setUserInfo } = userSlice.actions
+export const { setUserInfo, initUserState } = userSlice.actions
 export default userSlice.reducer

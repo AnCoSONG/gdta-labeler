@@ -1,28 +1,76 @@
 import styles from "./HistoryItem.module.scss";
-type propType = {
-    title: string;
-    id: string,
-    imgsrc: string
-}
-export const HistoryItem = (prop: propType) => {
+import { LabelHistory } from "./LabelSlice";
+import { v4 } from "uuid";
+import React from "react";
 
+type PropType = {
+    onClick: (e: React.MouseEvent) => void;
+} & LabelHistory;
+export const HistoryItem = (prop: PropType) => {
+    // 修改标注
+    
     return (
-        <div className={styles.item}>
+        // 完成卡片交互!
+        <div className={styles.item} onClick={prop.onClick}>
+            <div className={styles.badge} data-finished={prop.finished}>
+                {prop.finished? '✔' : '✘'}
+            </div>
             <div className={styles.item_left}>
-                <div className={styles.item_left_title}>
-                    {prop.title}
+                <div className={styles.item_firstline}>
+                    <div className={styles.item_firstline_title}>
+                        <span>{prop.img_title}</span>
+                    </div>
+                    <div className={styles.item_firstline_id}>
+                        {prop.img_id.split("").slice(16, 24).join("")}
+                        {/* {prop.img_id} */}
+                    </div>
                 </div>
-                <div className={styles.item_left_id}>
-                    ID {prop.id}
+                <div className={styles.item_secondline}>
+                    <div className={styles.item_secondline_check_wrapper}>
+                        <div
+                            className={styles.check}
+                            data-checked={prop.valid}
+                        ></div>
+                    </div>
+                    <div className={styles.item_secondline_check_wrapper}>
+                        {prop.styles.map((item) => {
+                            return (
+                                <div
+                                    className={styles.check}
+                                    key={v4()}
+                                    data-checked={item}
+                                ></div>
+                            );
+                        })}
+                    </div>
+                    <div className={styles.item_secondline_check_wrapper}>
+                        {prop.audience_gender.map((item) => {
+                            return (
+                                <div
+                                    className={styles.check}
+                                    key={v4()}
+                                    data-checked={item}
+                                ></div>
+                            );
+                        })}
+                    </div>
+                    <div className={styles.item_secondline_check_wrapper}>
+                        {prop.audience_age.map((item) => {
+                            return (
+                                <div
+                                    className={styles.check}
+                                    key={v4()}
+                                    data-checked={item}
+                                ></div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
             <div className={styles.item_right}>
-                <img
-                    src={prop.imgsrc}
-                    alt=""
-                    width={64}
-                    height={64}
-                />
+                <div className={styles.item_right_cover}>
+                    <img src={prop.img_src} alt="" width="64" height="64" />
+                </div>
             </div>
         </div>
     );

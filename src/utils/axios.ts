@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import { error } from "../utils/notify";
 const _axios = axios.create({
     timeout: 10000,
     baseURL: "http://localhost:5001",
@@ -13,12 +13,12 @@ _axios.interceptors.request.use(
             "Content-Type": "application/json",
             "Authorization": "Bearer " + localStorage.getItem("token")
         };
-        console.log('req', req);
+        console.log('request', req);
         return req;
     },
-    (error) => {
-        console.log('error', error);
-        return Promise.reject(error)
+    (err) => {
+        console.log('error', err);
+        return Promise.reject(err)
     }
 );
 
@@ -31,9 +31,9 @@ _axios.interceptors.response.use(
         }
         return response;
     },
-    (error) => {
-        console.log("error", error);
-        return Promise.reject(error)
+    (err) => {
+        console.log("error", err);
+        return Promise.reject(err)
     }
 );
 

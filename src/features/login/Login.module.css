@@ -89,7 +89,10 @@
 }
 
 .left_box_form_input:focus{
-  outline: 2px solid #d3d3d3;
+  /* outline: 2px solid #d3d3d3; */
+  outline: none;
+  box-shadow: 0px 0px 0px 2px #c2c2c2;
+
   /* border: none; */
 }
 
@@ -113,6 +116,12 @@
   background-color: #2c79c2;
   cursor: pointer;
   /* color: white; */
+}
+
+.left_box_form_btn:focus {
+  outline: none;
+  box-shadow: 0px 0px 0px 2px #c2c2c2;
+
 }
 
 .left_box_footer {

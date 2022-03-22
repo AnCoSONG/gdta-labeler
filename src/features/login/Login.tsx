@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch } from "../../app/hooks";
+// import { useAppDispatch } from "../../app/hooks";
 import { axios, seed } from "../../utils";
 import styles from "./Login.module.css";
 import loader from "../../assets/loader.gif";
 import { checkChar } from "../../utils";
-import { error, success } from "../../utils/notify";
+import { error } from "../../utils/notify";
 import { cryptolize } from "../../utils";
-import throttle from "lodash.throttle";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 export const Login = () => {
-    const dispatch = useAppDispatch();
+    // const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
     const [username, setUsername] = useState("");
@@ -130,11 +131,18 @@ export const Login = () => {
         }
     };
 
-    const onEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const [isLoading, setIsLoading] = useState(false);
+    const loginProcess = async () => {
+        setIsLoading(true);
+        await login();
+        setIsLoading(false);
+    }
+    const onEnter = async (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
-            login();
+            await loginProcess();
         }
     }
+
 
     // 登录 ========================
 
@@ -172,10 +180,10 @@ export const Login = () => {
                             className={styles.left_box_form_btn}
                             onClick={async () => {
                                 // 访问api查询是否正确
-                                await login();
+                                await loginProcess();
                             }}
                         >
-                            Login
+                            {isLoading ? <FontAwesomeIcon icon={faSpinner} spin></FontAwesomeIcon> : "Login"}
                         </button>
                     </div>
                     <div className={styles.left_box_footer}>GDTA@inlab</div>
@@ -214,3 +222,5 @@ export const Login = () => {
         </div>
     );
 };
+
+export default Login;

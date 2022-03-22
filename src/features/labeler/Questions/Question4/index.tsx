@@ -68,7 +68,7 @@ export const Question4 = () => {
                             );
                         }}
                     >
-                        壮年(45~64)
+                        中年(45~64)
                     </li>
                     <li
                         className={commonStyles.tag}
@@ -82,7 +82,7 @@ export const Question4 = () => {
                             );
                         }}
                     >
-                        壮年(65~)
+                        老年(65~)
                     </li>
                 </ul>
             </div>

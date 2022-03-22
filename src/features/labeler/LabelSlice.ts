@@ -1,11 +1,22 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { axios } from "../../utils";
-import { error, success } from "../../utils/notify";
+import { success } from "../../utils/notify";
 
-type LabelHistory = {
-    id: string;
-    title: string;
-    imgsrc: string;
+export const stylesMapping =
+    "现代,科技,卡通/插画,写实/摄影,装饰,复古/古典,简约".split(",");
+export const genderMapping = "男性,女性".split(",");
+export const agesMapping = "青少年,青年,壮年,中年,老年".split(",");
+
+export type LabelHistory = {
+    _id: string;
+    img_id: string;
+    img_title: string;
+    img_src: string;
+    valid: boolean;
+    finished: boolean;
+    styles: boolean[];
+    audience_age: boolean[];
+    audience_gender: boolean[];
 };
 
 export type LabelData = {
@@ -37,16 +48,22 @@ export type LabelDataPayload = {
     data: boolean | LabelDataForMultiple;
 };
 
+type HistoryPayload = {
+    count: number;
+    history: LabelHistory[];
+}
+
 type LabelSliceType = {
     history: LabelHistory[];
+    count: number;
     labelData: LabelData;
-    ALLDONE: boolean;
     labelImage: LabelImage;
+    editing: boolean;
 };
 
 export const initState: LabelSliceType = {
     history: [],
-    ALLDONE: false,
+    count: 20,
     labelData: {
         q1: true,
         q2: [false, false, false, false, false, false, false],
@@ -56,53 +73,97 @@ export const initState: LabelSliceType = {
     labelImage: {
         _id: "",
         title: "",
-        src: "https://dummyimage.com/600x400/fff/000.jpg&text=Please+Wait",
+        src: "",
         source: "",
         labeled_count: 0,
         created_time: "",
     },
+    editing: false,
 };
 
 export const fetchImageDataAsync = createAsyncThunk(
     "labeler/fetchImageData",
     async (labeler_id: string) => {
         // 拿取图片之前先把localStorage清空
-        const currentImg = localStorage.getItem("currentImg");
-        let unfishedImgID = null;
-        if (currentImg){
-            unfishedImgID = JSON.parse(currentImg)._id;
-            localStorage.removeItem("currentImg");
-            console.log("已清除currentImg记录");
-        }
-        let response;
-        if (unfishedImgID && unfishedImgID !== "" && unfishedImgID !== 'Thanks') {
-            console.log('正在恢复上次未完成的图片');
-            response = await axios.get(`/imgs/${unfishedImgID}`);
-        } else {
-            console.log('正在获取新的待打标图像');
-            response = await axios.get("/imgs/next", {params: {labeler_id: labeler_id}});
-        }
-        // The value we return becomes the `fulfilled` action payload
+        console.log("正在获取新的待打标图像");
+        let response = await axios.get("/imgs/next", {
+            params: { labeler_id: labeler_id },
+        });
         console.log("fetchImageData", response);
         if (response.status === 200) {
-            if (response.data.data === 'all done') {
-                success('您已打标完成全部打标内容！打标界面已锁定，您可以自行退出.', 5000)
+            if (response.data.message === "all done") {
+                success(
+                    "您已打标完成全部打标内容！打标界面已锁定，您可以自行退出.",
+                    5000
+                );
                 // all done image
                 return {
                     _id: "Thanks",
                     title: "All Done",
                     src: "https://dummyimage.com/600x400/fff/000.jpg&text=All+Done",
-                    source: "corporations!",
+                    source: "cooperation!",
                     author: "for",
                     labeled_count: 0,
                     created_time: "your",
                 };
+            } else if (response.data.message === "Skip") {
+                success("该图像是您之前跳过的图像，请您再尝试打标", 2000);
             }
-            return response.data.data as LabelImage;
-        
+            return response.data.data.img as LabelImage;
         } else {
             // error('请求出错，请联系管理员')
             console.error("请求出错");
+            return {} as LabelImage;
+        }
+    }
+);
+
+export const fetchHistoryAsync = createAsyncThunk(
+    "labeler/fetchHistory",
+    async (args: {
+        labeler_id: string;
+        page: number;
+        limit: number;
+        query_type: string;
+    }) => {
+        let response = await axios.post("/record/list", {
+            labeler_id: args.labeler_id,
+            page: args.page,
+            limit: args.limit,
+            query_type: args.query_type,
+        });
+        if (response.status === 201 || response.status === 200) {
+            console.log("fetch history async response", response);
+            return {
+                history: response.data.data.pageData,
+                count: response.data.data.count,
+            } as HistoryPayload;
+        } else {
+            console.error("请求出错");
+            return {
+                history: [],
+                count: 0,
+            } as HistoryPayload;
+        }
+    }
+);
+
+export const fetchLabelImageWithIDAsync = createAsyncThunk(
+    "labeler/fetchLabelImageWithID",
+    async (img_id: string) => {
+        let response = await axios.get(`/imgs/${img_id}`).catch((e) => {
+            console.error(e.name);
+        });
+        if (response) {
+            if (response.status === 200) {
+                console.log("fetchLabelImageWithIDAsync", response.data);
+                return response.data.data as LabelImage;
+            } else {
+                console.error("fetchLabelImageWithIDAsync: 请求出错");
+                return {} as LabelImage;
+            }
+        }else {
+            console.error("fetchLabelImageWithIDAsync: 请求出错");
             return {} as LabelImage;
         }
     }
@@ -112,9 +173,6 @@ export const labelSlice = createSlice({
     name: "label",
     initialState: initState,
     reducers: {
-        addHistory: (state, action: PayloadAction<LabelHistory>) => {
-            state.history.push(action.payload);
-        },
         setLabelData: (state, action: PayloadAction<LabelDataPayload>) => {
             // console.log(action.type);
             switch (action.payload.question) {
@@ -124,7 +182,7 @@ export const labelSlice = createSlice({
                         state.labelData = { ...initState.labelData };
                         state.labelData.q1 = action.payload.data;
                     } else {
-                        throw Error("q1 data type error");
+                        throw new Error("q1 data type error");
                     }
                     break;
                 case "q2":
@@ -133,7 +191,7 @@ export const labelSlice = createSlice({
                             (action.payload.data as LabelDataForMultiple).idx
                         ] = (action.payload.data as LabelDataForMultiple).data;
                     } else {
-                        throw Error("q2 data type error");
+                        throw new Error("q2 data type error");
                     }
                     break;
                 case "q3":
@@ -142,7 +200,7 @@ export const labelSlice = createSlice({
                             (action.payload.data as LabelDataForMultiple).idx
                         ] = (action.payload.data as LabelDataForMultiple).data;
                     } else {
-                        throw Error("q3 data type error");
+                        throw new Error("q3 data type error");
                     }
                     break;
                 case "q4":
@@ -151,12 +209,26 @@ export const labelSlice = createSlice({
                             (action.payload.data as LabelDataForMultiple).idx
                         ] = (action.payload.data as LabelDataForMultiple).data;
                     } else {
-                        throw Error("q4 data type error");
+                        throw new Error("q4 data type error");
                     }
                     break;
                 default:
                     break;
             }
+        },
+        setLabelDataAsObject: (state, action: PayloadAction<LabelData>) => {
+            // 这个接口就当成更新数据用的
+            state.labelData = {...action.payload}
+            state.editing = true;
+            console.log(state.labelData);
+        },
+        initLabelerState: (state) => {
+            state.history = [];
+            state.count = initState.count;
+            state.editing = false;
+            state.labelData = { ...initState.labelData };
+            state.labelImage = { ...initState.labelImage };
+            console.log("inited", state);
         },
     },
     extraReducers: (builder) => {
@@ -166,8 +238,7 @@ export const labelSlice = createSlice({
                 fetchImageDataAsync.fulfilled,
                 (state, action: PayloadAction<LabelImage>) => {
                     if (action.payload._id === "Thanks") {
-                        console.log('Thanks payload,', action.payload)
-                        state.ALLDONE = true;
+                        console.log("Thanks payload,", action.payload);
                     }
                     console.log(action.payload);
                     state.labelImage._id = action.payload._id;
@@ -181,10 +252,30 @@ export const labelSlice = createSlice({
                     state.labelImage.tags = action.payload.tags;
                     // 拿到新图片，labelData数据要清空
                     state.labelData = { ...initState.labelData };
+
+                    // 拿到新图像就把edit模式关掉
+                    state.editing = false;
+                }
+            )
+            .addCase(fetchHistoryAsync.pending, (state) => {})
+            .addCase(
+                fetchHistoryAsync.fulfilled,
+                (state, action: PayloadAction<HistoryPayload>) => {
+                    console.log("history", action.payload);
+                    state.history = [...action.payload.history];
+                    state.count = action.payload.count;
+                }
+            )
+            .addCase(fetchLabelImageWithIDAsync.pending, (state) => {})
+            .addCase(
+                fetchLabelImageWithIDAsync.fulfilled,
+                (state, action: PayloadAction<LabelImage>) => {
+                    console.log('fetchLabelImageWithID', action.payload);
+                    state.labelImage = {...action.payload};
                 }
             );
     },
 });
 
-export const { addHistory, setLabelData } = labelSlice.actions;
+export const { setLabelData, initLabelerState, setLabelDataAsObject } = labelSlice.actions;
 export default labelSlice.reducer;

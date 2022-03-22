@@ -1,8 +1,10 @@
+import React from "react";
 import { Routes, Route } from "react-router-dom";
 import "./App.css";
-import { Labeler } from "./features/labeler/Labeler";
-import { Login } from "./features/login/Login";
-import { Notfound } from "./features/notfound/Notfound";
+import { Loader } from "./features/loading/loader";
+const Labeler = React.lazy(() => import("./features/labeler/Labeler"))
+const Login = React.lazy(() => import("./features/login/Login"));
+const Notfound = React.lazy(() => import("./features/notfound/Notfound"));
 
 function App() {
     return (
@@ -15,9 +17,15 @@ function App() {
             }}
         >
             <Routes>
-                <Route path="/" element={<Labeler />}></Route>
-                <Route path="/login" element={<Login></Login>}></Route>
-                <Route path="*" element={<Notfound />}></Route>
+                <Route path="/" element={<React.Suspense fallback={<Loader/>}>
+                <Labeler />
+              </React.Suspense>}></Route>
+                <Route path="/login" element={<React.Suspense fallback={<Loader/>}>
+                <Login />
+              </React.Suspense>}></Route>
+                <Route path="*" element={<React.Suspense fallback={<Loader/>}>
+                <Notfound></Notfound>
+              </React.Suspense>}></Route>
             </Routes>
         </div>
     );

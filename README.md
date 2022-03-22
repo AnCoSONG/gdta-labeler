@@ -1,5 +1,14 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), using the [Redux](https://redux.js.org/) and [Redux Toolkit](https://redux-toolkit.js.org/) template.
 
+
+## Todos
+- [ ] 来源可以点击
+- [ ] 作者可以点击
+- [x] 展示用户打标数量
+- [x] 历史记录功能优化
+  - [x] 卡片交互
+  - [x] pager
+
 ## Available Scripts
 
 In the project directory, you can run:
