@@ -2,7 +2,7 @@ import axios from "axios";
 import { error } from "../utils/notify";
 const _axios = axios.create({
     timeout: 10000,
-    baseURL: "http://localhost:5001",
+    baseURL: process.env.REACT_APP_API_URL,
     withCredentials: true
 })
 
