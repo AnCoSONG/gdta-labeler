@@ -235,7 +235,14 @@ export const Labeler = () => {
     };
     // 双击打开展示器
     const onDoubleClicked = (e: React.BaseSyntheticEvent) => {
-        console.log("double clicked");
+        // console.log("double clicked");
+        const imgWHRatio = temp.current.naturalWidth / temp.current.naturalHeight;
+        const viewportWHRatio = window.innerWidth / window.innerHeight;
+        if (imgWHRatio > viewportWHRatio) {
+            imgShowerBox.current!.dataset.mode = "horizontal";
+        } else {
+            imgShowerBox.current!.dataset.mode = "vertical";
+        }
         toggleImgShower(true);
     };
     // 支持图像操作 ==========================================================
