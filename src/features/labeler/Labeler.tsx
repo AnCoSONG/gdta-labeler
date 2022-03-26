@@ -147,8 +147,12 @@ export const Labeler = () => {
         imgRef.current!.style.left = `${imgLeft}px`;
         imgRef.current!.style.top = `${imgTop}px`;
         imgRef.current!.style.opacity = "1";
-        console.log("init pos");
-        if (imgWidth > imgHeight) {
+        console.log("pos inited");
+        // console.log("img size", imgWidth, imgHeight, imgWidth/imgHeight);
+        // console.log("browser viewport", window.innerWidth, window.innerHeight, window.innerWidth/window.innerHeight);
+        const imgWHRatio = imgWidth / imgHeight;
+        const viewportWHRatio = window.innerWidth / window.innerHeight;
+        if (imgWHRatio > viewportWHRatio) {
             imgShowerBox.current!.dataset.mode = "horizontal";
         } else {
             imgShowerBox.current!.dataset.mode = "vertical";
