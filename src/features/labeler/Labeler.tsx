@@ -92,11 +92,17 @@ export const Labeler = () => {
                                 res.data.data.username +
                                     ", 欢迎回来(令牌已刷新)."
                             );
-                        } else {
+                        } else if (res.data.auth.status === 0) {
                             console.log("Labeler: token is valid");
                             success(res.data.data.username + ", 欢迎回来");
+                        } else {
+                            console.log("Labeler: token is invalid");
+                            localStorage.removeItem("token");
+                            error(res.data.auth.msg);
+                            navigate("/login");
                         }
                     } else {
+                        // 这段代码进不来，不是20x,30x会直接throw error
                         console.log("Labeler: token is invalid");
                         localStorage.removeItem("token");
                         error("登录失效，请重新登录");
@@ -106,6 +112,8 @@ export const Labeler = () => {
                 .catch((err) => {
                     console.log(err);
                     error(err.name);
+                    localStorage.removeItem("token");
+                    navigate("/login");
                 });
         }
     }, [dispatch, navigate]);
@@ -164,7 +172,7 @@ export const Labeler = () => {
         // if (!imgLoaded) {
         //     console.log("Labeler: img is not loaded");
         // } else {
-
+        // todo：根据labelImage.width和height实现而不用再使用temp
         setImgLoaded(false);
         temp.current.src = labelImage.src;
         return () => {};
@@ -236,7 +244,8 @@ export const Labeler = () => {
     // 双击打开展示器
     const onDoubleClicked = (e: React.BaseSyntheticEvent) => {
         // console.log("double clicked");
-        const imgWHRatio = temp.current.naturalWidth / temp.current.naturalHeight;
+        const imgWHRatio =
+            temp.current.naturalWidth / temp.current.naturalHeight;
         const viewportWHRatio = window.innerWidth / window.innerHeight;
         if (imgWHRatio > viewportWHRatio) {
             imgShowerBox.current!.dataset.mode = "horizontal";
@@ -556,10 +565,10 @@ export const Labeler = () => {
     }, [dispatch, query_type, historyOn, limit, page, userState.id]);
 
     useEffect(() => {
-        if(historyOn){
+        if (historyOn) {
             setPage(1); // 设到第一页
         }
-    }, [historyOn])
+    }, [historyOn]);
 
     //? 历史记录 =================
 
@@ -645,11 +654,12 @@ export const Labeler = () => {
         <div className={styles.wrapper}>
             <nav className={styles.nav}>
                 <div className={styles.left}>
-                    <Menu on={historyOn} onClick={
-                        (e) => {
+                    <Menu
+                        on={historyOn}
+                        onClick={(e) => {
                             setHistoryOn(true);
-                        }
-                    }></Menu>
+                        }}
+                    ></Menu>
                     <div className={styles.logo}>GDTA Labeler</div>
                 </div>
                 <div className={styles.right}>
@@ -1090,7 +1100,10 @@ export const Labeler = () => {
             <div className={styles.sidebar} data-on={historyOn}>
                 {/* 完成新的设计稿和后端交互方案 */}
                 <div className={styles.sidebar_title}>
-                    <Menu on={historyOn} onClick={(e) => setHistoryOn(false)}></Menu>
+                    <Menu
+                        on={historyOn}
+                        onClick={(e) => setHistoryOn(false)}
+                    ></Menu>
                     <div className={styles.sidebar_title_main}>
                         <div>History</div>
                         <Dropdown
@@ -1137,8 +1150,7 @@ export const Labeler = () => {
                 <div className={styles.sidebar_flexbox}>
                     {historyLoading ? (
                         <Loader />
-                    ) : (
-                        historyState.length > 0? 
+                    ) : historyState.length > 0 ? (
                         historyState.map((item) => {
                             return (
                                 <HistoryItem
@@ -1158,31 +1170,41 @@ export const Labeler = () => {
                                     audience_gender={item.audience_gender}
                                 />
                             );
-                        }) : 
+                        })
+                    ) : (
                         <div className={styles.sidebar_nodata}>
                             <div className={styles.sidebar_nodata_icon}>
-                                <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
+                                <FontAwesomeIcon
+                                    icon={faFlag}
+                                ></FontAwesomeIcon>
                             </div>
-                            <div className={styles.sidebar_nodata_text}>Nothing Found</div>
+                            <div className={styles.sidebar_nodata_text}>
+                                Nothing Found
+                            </div>
                         </div>
                     )}
                 </div>
                 <div className={styles.pager}>
-                    <Pagination layout="sizes, prev, pager, next" total={countState} small={false}
+                    <Pagination
+                        layout="sizes, prev, pager, next"
+                        total={countState}
+                        small={false}
                         pageSizes={[1, 2, 5, 10, 15, 25, 50, 100]}
-                        currentPage={page} onCurrentChange={(page) => {
-                            if(page) {
-                                setPage(page)
+                        currentPage={page}
+                        onCurrentChange={(page) => {
+                            if (page) {
+                                setPage(page);
                             } else {
-                                error('error when set page')
+                                error("error when set page");
                             }
                         }}
-                        pageSize={limit} onSizeChange={(size) => {
-                            if(size) {
+                        pageSize={limit}
+                        onSizeChange={(size) => {
+                            if (size) {
                                 setPage(1);
                                 setLimit(size);
                             } else {
-                                error('error when set limit')
+                                error("error when set limit");
                             }
                         }}
                     />
