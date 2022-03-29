@@ -27,7 +27,7 @@ export const Question2 = () => {
                     <li className={commonStyles.tag} data-selected={state[3]} onClick={() => dispatch(setLabelData({question: "q2", data: {idx: 3, data: !state[3]} }))}>卡通/插画</li>
                 </Popover>
                 <Popover placement="top-start" title="装饰 Decoration" trigger="hover" content="以大量装饰元素的堆叠作为主要的设计方法，展现出华丽、复杂的观感。">
-                    <li className={commonStyles.tag} data-selected={state[4]} onClick={() => dispatch(setLabelData({question: "q2", data: {idx: 4, data: !state[4]} }))}>装饰</li>
+                    <li className={commonStyles.tag} data-selected={state[4]} onClick={() => dispatch(setLabelData({question: "q2", data: {idx: 4, data: !state[4]} }))}>复杂/装饰</li>
                 </Popover>
                 <Popover placement="top-start" title="写实 Realism" trigger="hover" content="以摄影或拟真的图像作为设计的主要元素，传达出具象、真实的观感。">
                     <li className={commonStyles.tag} data-selected={state[5]} onClick={() => dispatch(setLabelData({question: "q2", data: {idx: 5, data: !state[5]} }))}>写实</li>
