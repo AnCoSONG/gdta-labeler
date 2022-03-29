@@ -3,7 +3,6 @@ import React, {
     useState,
     useRef,
     useMemo,
-    useCallback,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -36,13 +35,13 @@ import {
     fetchLabelImageWithIDAsync,
     genderMapping,
     initLabelerState,
-    initState,
     LabelHistory,
     setLabelDataAsObject,
+    setLabelImageLoadedStatus,
     stylesMapping,
 } from "./LabelSlice";
 import { Loader } from "../loading/loader";
-import { Button, Dialog, Pagination } from "element-react";
+import { Button, Dialog, Pagination, Popover } from "element-react";
 
 const getTransform = (DOM: Element) => {
     let arr = getComputedStyle(DOM).transform.split(",");
@@ -128,55 +127,93 @@ export const Labeler = () => {
     const imgShowerBox = useRef<HTMLDivElement>(null);
     const imgShower = useRef<HTMLImageElement>(null);
     const labelImage = useAppSelector((state) => state.labeler.labelImage);
-    const [imgLoaded, setImgLoaded] = useState(false);
-    const temp = useRef(new Image());
-    temp.current.onload = () => {
-        // 初始化时调整图像
-        // 图像过大时，缩放至正常可显示大小
-        // 图像过小时，通过变换把img放在content中心
-        // 借用temp实现图像加载
-        setImgLoaded(true);
-        console.log(imgLoaded);
-        console.log("Labeler: img is loaded");
-        const imgWidth = temp.current.naturalWidth;
-        const imgHeight = temp.current.naturalHeight;
-        const contentWidth = contentRef.current!.clientWidth;
-        const contentHeight = contentRef.current!.clientHeight;
-        const scaleW = imgWidth / contentWidth;
-        const scaleH = imgHeight / contentHeight;
-        const maxScale = Math.max(Math.max(scaleH, scaleW), 0.95) + 0.05;
-        const newWidth = imgWidth / maxScale;
-        const newHeight = imgHeight / maxScale;
-        // 不论过大过小，都需要将图像放到content中心
-        const imgLeft = (contentWidth - newWidth) / 2;
-        const imgTop = (contentHeight - newHeight) / 2;
-        imgRef.current!.style.width = `${newWidth}px`;
-        imgRef.current!.style.height = `${newHeight}px`;
-        imgRef.current!.style.left = `${imgLeft}px`;
-        imgRef.current!.style.top = `${imgTop}px`;
-        imgRef.current!.style.opacity = "1";
-        console.log("pos inited");
-        // console.log("img size", imgWidth, imgHeight, imgWidth/imgHeight);
-        // console.log("browser viewport", window.innerWidth, window.innerHeight, window.innerWidth/window.innerHeight);
-        const imgWHRatio = imgWidth / imgHeight;
-        const viewportWHRatio = window.innerWidth / window.innerHeight;
-        if (imgWHRatio > viewportWHRatio) {
-            imgShowerBox.current!.dataset.mode = "horizontal";
-        } else {
-            imgShowerBox.current!.dataset.mode = "vertical";
-        }
-        // console.log(imgShower.current!.dataset);
-        imgShower.current!.src = imgRef.current!.src; //将图像src赋值给放大器
-    };
+    const imgLoaded = useAppSelector((state) => state.labeler.labelImageLoaded);
+    // const temp = useRef(new Image());
+    // temp.current.onload = () => {
+    //     // 初始化时调整图像
+    //     // 图像过大时，缩放至正常可显示大小
+    //     // 图像过小时，通过变换把img放在content中心
+    //     // 借用temp实现图像加载
+    //     setImgLoaded(true);
+    //     console.log(imgLoaded);
+    //     console.log("Labeler: img is loaded");
+    //     const imgWidth = temp.current.naturalWidth;
+    //     const imgHeight = temp.current.naturalHeight;
+    //     const contentWidth = contentRef.current!.clientWidth;
+    //     const contentHeight = contentRef.current!.clientHeight;
+    //     const scaleW = imgWidth / contentWidth;
+    //     const scaleH = imgHeight / contentHeight;
+    //     const maxScale = Math.max(Math.max(scaleH, scaleW), 0.95) + 0.05;
+    //     const newWidth = imgWidth / maxScale;
+    //     const newHeight = imgHeight / maxScale;
+    //     // 不论过大过小，都需要将图像放到content中心
+    //     const imgLeft = (contentWidth - newWidth) / 2;
+    //     const imgTop = (contentHeight - newHeight) / 2;
+    //     imgRef.current!.style.width = `${newWidth}px`;
+    //     imgRef.current!.style.height = `${newHeight}px`;
+    //     imgRef.current!.style.left = `${imgLeft}px`;
+    //     imgRef.current!.style.top = `${imgTop}px`;
+    //     imgRef.current!.style.opacity = "1";
+    //     console.log("pos inited");
+    //     // console.log("img size", imgWidth, imgHeight, imgWidth/imgHeight);
+    //     // console.log("browser viewport", window.innerWidth, window.innerHeight, window.innerWidth/window.innerHeight);
+    //     const imgWHRatio = imgWidth / imgHeight;
+    //     const viewportWHRatio = window.innerWidth / window.innerHeight;
+    //     if (imgWHRatio > viewportWHRatio) {
+    //         imgShowerBox.current!.dataset.mode = "horizontal";
+    //     } else {
+    //         imgShowerBox.current!.dataset.mode = "vertical";
+    //     }
+    //     // console.log(imgShower.current!.dataset);
+    //     imgShower.current!.src = imgRef.current!.src; //将图像src赋值给放大器
+    // };
+    // useEffect(() => {
+    //     // if (!imgLoaded) {
+    //     //     console.log("Labeler: img is not loaded");
+    //     // } else {
+    //     // todo：根据labelImage.width和height实现而不用再使用temp
+    //     setImgLoaded(false);
+    //     temp.current.src = labelImage.src;
+
+    //     return () => {};
+    // }, [imgRef, contentRef, imgShower, imgShowerBox, labelImage, temp]);
+
     useEffect(() => {
-        // if (!imgLoaded) {
-        //     console.log("Labeler: img is not loaded");
-        // } else {
-        // todo：根据labelImage.width和height实现而不用再使用temp
-        setImgLoaded(false);
-        temp.current.src = labelImage.src;
-        return () => {};
-    }, [imgRef, contentRef, imgShower, imgShowerBox, labelImage.src, temp]);
+        if (!imgLoaded) {
+            console.log("Labeler: img is not loaded");
+        } else {
+            console.log("Labeler: img is loaded");
+            const imgWidth = labelImage.width;
+            const imgHeight = labelImage.height;
+            const contentWidth = contentRef.current!.clientWidth;
+            const contentHeight = contentRef.current!.clientHeight;
+            const scaleW = imgWidth / contentWidth;
+            const scaleH = imgHeight / contentHeight;
+            const maxScale = Math.max(Math.max(scaleH, scaleW), 0.95) + 0.05;
+            const newWidth = imgWidth / maxScale;
+            const newHeight = imgHeight / maxScale;
+            // 不论过大过小，都需要将图像放到content中心
+            const imgLeft = (contentWidth - newWidth) / 2;
+            const imgTop = (contentHeight - newHeight) / 2;
+            imgRef.current!.style.width = `${newWidth}px`;
+            imgRef.current!.style.height = `${newHeight}px`;
+            imgRef.current!.style.left = `${imgLeft}px`;
+            imgRef.current!.style.top = `${imgTop}px`;
+            imgRef.current!.style.opacity = "1";
+            console.log("pos inited");
+            // console.log("img size", imgWidth, imgHeight, imgWidth/imgHeight);
+            // console.log("browser viewport", window.innerWidth, window.innerHeight, window.innerWidth/window.innerHeight);
+            const imgWHRatio = imgWidth / imgHeight;
+            const viewportWHRatio = window.innerWidth / window.innerHeight;
+            if (imgWHRatio > viewportWHRatio) {
+                imgShowerBox.current!.dataset.mode = "horizontal";
+            } else {
+                imgShowerBox.current!.dataset.mode = "vertical";
+            }
+            // console.log(imgShower.current!.dataset);
+            imgShower.current!.src = imgRef.current!.src; //将图像src赋值给放大器
+        }
+    }, [imgLoaded, labelImage.height, labelImage.width]);
     // 支持图像动态加载和初始化 =========================
 
     // 支持图像操作 ==========================================================
@@ -244,8 +281,7 @@ export const Labeler = () => {
     // 双击打开展示器
     const onDoubleClicked = (e: React.BaseSyntheticEvent) => {
         // console.log("double clicked");
-        const imgWHRatio =
-            temp.current.naturalWidth / temp.current.naturalHeight;
+        const imgWHRatio = labelImage.width / labelImage.height;
         const viewportWHRatio = window.innerWidth / window.innerHeight;
         if (imgWHRatio > viewportWHRatio) {
             imgShowerBox.current!.dataset.mode = "horizontal";
@@ -663,12 +699,19 @@ export const Labeler = () => {
                     <div className={styles.logo}>GDTA Labeler</div>
                 </div>
                 <div className={styles.right}>
-                    <div
-                        className={styles.wrap_btn}
-                        style={{ display: editing_mode ? "block" : "none" }}
+                    <Popover
+                        placement="bottom"
+                        content="编辑模式"
+                        trigger="hover"
+                        width="auto"
                     >
-                        EDIT
-                    </div>
+                        <div
+                            className={styles.wrap_btn}
+                            style={{ display: editing_mode ? "block" : "none" }}
+                        >
+                            EDIT
+                        </div>
+                    </Popover>
                     <div className={styles.btn}>DOC</div>
                     <div className={styles.btn}>HELP</div>
                     <Dropdown
@@ -694,7 +737,7 @@ export const Labeler = () => {
                         menu={
                             <Dropdown.Menu
                                 style={{
-                                    width: "150px",
+                                    width: "200px",
                                     fontSize: "0.9rem",
                                     fontWeight: "400",
                                 }}
@@ -738,7 +781,7 @@ export const Labeler = () => {
                                     styles.main_board_inner_title_wrapper_title
                                 }
                             >
-                                {labelImage.title}
+                                {imgLoaded ? labelImage.title : "Loading..."}
                             </div>
                             <div
                                 className={
@@ -749,25 +792,69 @@ export const Labeler = () => {
                                     <FontAwesomeIcon
                                         icon={faIdCard}
                                     ></FontAwesomeIcon>
-                                    <span>{labelImage._id}</span>
+                                    <Popover
+                                        trigger="hover"
+                                        content={"ID: " + labelImage._id}
+                                        width="auto"
+                                    >
+                                        <span
+                                            style={{
+                                                color: "white",
+                                                borderRadius: "4px",
+                                                backgroundColor: "#5e5e5e",
+                                                padding: "2px 4px",
+                                            }}
+                                        >
+                                            {imgLoaded
+                                                ? labelImage._id.slice(16, 24)
+                                                : "Unknown"}
+                                        </span>
+                                    </Popover>
                                 </div>
                                 <div>
                                     <FontAwesomeIcon
                                         icon={faUserFriends}
                                     ></FontAwesomeIcon>
-                                    <span>
-                                        {labelImage.author ?? "Unknown"}
+                                    <span
+                                        style={{
+                                            maxWidth: "100px",
+                                            whiteSpace: "nowrap",
+                                            textOverflow: "ellipsis",
+                                            overflow: "hidden",
+                                        }}
+                                    >
+                                        {imgLoaded
+                                            ? labelImage.author
+                                            : "Unknown"}
                                     </span>
                                 </div>
                                 <div>
                                     <FontAwesomeIcon
                                         icon={faClock}
                                     ></FontAwesomeIcon>
-                                    <span>{labelImage.created_time}</span>
+                                    <span
+                                        style={{
+                                            maxWidth: "100px",
+                                            whiteSpace: "nowrap",
+                                            textOverflow: "ellipsis",
+                                            overflow: "hidden",
+                                        }}
+                                    >
+                                        {imgLoaded
+                                            ? labelImage.created_time
+                                            : "Unknown"}
+                                    </span>
                                 </div>
                                 <div>
                                     <FontAwesomeIcon icon={faAtom} />
-                                    <span>{labelImage.source}</span>
+                                    <a
+                                        target="_blank"
+                                        href={labelImage.project_url} rel="noreferrer"
+                                    >
+                                        {imgLoaded
+                                            ? labelImage.source
+                                            : "Unknown"}
+                                    </a>
                                 </div>
                                 <div
                                     className={
@@ -805,24 +892,21 @@ export const Labeler = () => {
                                 onMouseUp={(e) => onMouseMoveend(e)}
                                 onWheel={(e) => onMouseWheel(e)}
                             >
-                                {/* {!imgLoaded && } */}
-                                {imgLoaded ? (
-                                    <img
-                                        ref={imgRef}
-                                        src={labelImage.src}
-                                        alt=""
-                                        // onLoad={() => {
-                                        //     console.log('onload')
-                                        //     setImgLoaded(true)
-                                        // }}
-                                        draggable={false}
-                                        onDoubleClick={(e) =>
-                                            onDoubleClicked(e)
-                                        }
-                                    />
-                                ) : (
-                                    <Loader />
-                                )}
+                                <img
+                                    ref={imgRef}
+                                    src={labelImage.src}
+                                    alt=""
+                                    onLoad={() => {
+                                        console.log("onload");
+                                        // setImgLoaded(true)
+                                        dispatch(
+                                            setLabelImageLoadedStatus(true)
+                                        );
+                                    }}
+                                    draggable={false}
+                                    onDoubleClick={(e) => onDoubleClicked(e)}
+                                />
+                                {!imgLoaded && <Loader />}
                             </div>
                         </div>
                     </div>
@@ -1189,7 +1273,7 @@ export const Labeler = () => {
                         layout="sizes, prev, pager, next"
                         total={countState}
                         small={false}
-                        pageSizes={[1, 2, 5, 10, 15, 25, 50, 100]}
+                        pageSizes={[1, 2, 5, 10, 15, 25, 50, 100, 200, 500, 1000]}
                         currentPage={page}
                         onCurrentChange={(page) => {
                             if (page) {

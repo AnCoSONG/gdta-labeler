@@ -34,7 +34,10 @@ export type LabelImage = {
     author?: string;
     tags?: Array<string>;
     labeled_count: number;
+    width: number;
+    height: number;
     source: string;
+    project_url: string;
     created_time: string;
 };
 
@@ -51,7 +54,7 @@ export type LabelDataPayload = {
 type HistoryPayload = {
     count: number;
     history: LabelHistory[];
-}
+};
 
 type LabelSliceType = {
     history: LabelHistory[];
@@ -59,6 +62,7 @@ type LabelSliceType = {
     labelData: LabelData;
     labelImage: LabelImage;
     editing: boolean;
+    labelImageLoaded: boolean;
 };
 
 export const initState: LabelSliceType = {
@@ -75,10 +79,14 @@ export const initState: LabelSliceType = {
         title: "",
         src: "",
         source: "",
+        width: 0,
+        height: 0,
+        project_url: "",
         labeled_count: 0,
         created_time: "",
     },
     editing: false,
+    labelImageLoaded: false,
 };
 
 export const fetchImageDataAsync = createAsyncThunk(
@@ -103,6 +111,9 @@ export const fetchImageDataAsync = createAsyncThunk(
                     src: "https://dummyimage.com/600x400/fff/000.jpg&text=All+Done",
                     source: "cooperation!",
                     author: "for",
+                    width: 600,
+                    height: 400,
+                    project_url: "",
                     labeled_count: 0,
                     created_time: "your",
                 };
@@ -162,7 +173,7 @@ export const fetchLabelImageWithIDAsync = createAsyncThunk(
                 console.error("fetchLabelImageWithIDAsync: 请求出错");
                 return {} as LabelImage;
             }
-        }else {
+        } else {
             console.error("fetchLabelImageWithIDAsync: 请求出错");
             return {} as LabelImage;
         }
@@ -218,9 +229,31 @@ export const labelSlice = createSlice({
         },
         setLabelDataAsObject: (state, action: PayloadAction<LabelData>) => {
             // 这个接口就当成更新数据用的
-            state.labelData = {...action.payload}
+            state.labelData = { ...action.payload };
             state.editing = true;
             console.log(state.labelData);
+        },
+        selectAll: (state, action: PayloadAction<string>) => {
+            switch (action.payload) {
+                case "q3":
+                    const q3hasTrue = state.labelData.q3.some((e) => e);
+                    if (q3hasTrue) {
+                        state.labelData.q3.fill(false);
+                    } else {
+                        state.labelData.q3.fill(true);
+                    }
+                    break;
+                case "q4":
+                    const q4hasTrue = state.labelData.q4.some((e) => e);
+                    if (q4hasTrue) {
+                        state.labelData.q4.fill(false);
+                    } else {
+                        state.labelData.q4.fill(true);
+                    }
+                    break;
+                default:
+                    break;
+            }
         },
         initLabelerState: (state) => {
             state.history = [];
@@ -230,10 +263,18 @@ export const labelSlice = createSlice({
             state.labelImage = { ...initState.labelImage };
             console.log("inited", state);
         },
+        setLabelImageLoadedStatus: (state, action: PayloadAction<boolean>) => {
+            state.labelImageLoaded = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
-            .addCase(fetchImageDataAsync.pending, (state) => {})
+            .addCase(fetchImageDataAsync.pending, (state) => {
+                state.labelImageLoaded = false;
+                // 拿新图片，labelData数据要清空
+                state.labelData = { ...initState.labelData };
+                state.labelImage = { ...initState.labelImage };
+            })
             .addCase(
                 fetchImageDataAsync.fulfilled,
                 (state, action: PayloadAction<LabelImage>) => {
@@ -241,20 +282,10 @@ export const labelSlice = createSlice({
                         console.log("Thanks payload,", action.payload);
                     }
                     console.log(action.payload);
-                    state.labelImage._id = action.payload._id;
-                    state.labelImage.author = action.payload.author;
-                    state.labelImage.created_time = action.payload.created_time;
-                    state.labelImage.labeled_count =
-                        action.payload.labeled_count;
-                    state.labelImage.source = action.payload.source;
-                    state.labelImage.src = action.payload.src;
-                    state.labelImage.title = action.payload.title;
-                    state.labelImage.tags = action.payload.tags;
-                    // 拿到新图片，labelData数据要清空
-                    state.labelData = { ...initState.labelData };
-
+                    state.labelImage = { ...action.payload };
                     // 拿到新图像就把edit模式关掉
                     state.editing = false;
+                    // state.labelImageLoaded = true;
                 }
             )
             .addCase(fetchHistoryAsync.pending, (state) => {})
@@ -266,16 +297,26 @@ export const labelSlice = createSlice({
                     state.count = action.payload.count;
                 }
             )
-            .addCase(fetchLabelImageWithIDAsync.pending, (state) => {})
+            .addCase(fetchLabelImageWithIDAsync.pending, (state) => {
+                state.labelImageLoaded = false;
+                state.labelImage = { ...initState.labelImage };
+            })
             .addCase(
                 fetchLabelImageWithIDAsync.fulfilled,
                 (state, action: PayloadAction<LabelImage>) => {
-                    console.log('fetchLabelImageWithID', action.payload);
-                    state.labelImage = {...action.payload};
+                    console.log("fetchLabelImageWithID", action.payload);
+                    state.labelImage = { ...action.payload };
+                    // state.labelImageLoaded = true;
                 }
             );
     },
 });
 
-export const { setLabelData, initLabelerState, setLabelDataAsObject } = labelSlice.actions;
+export const {
+    setLabelData,
+    initLabelerState,
+    setLabelDataAsObject,
+    setLabelImageLoadedStatus,
+    selectAll,
+} = labelSlice.actions;
 export default labelSlice.reducer;
