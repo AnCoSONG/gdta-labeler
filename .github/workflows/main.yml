@@ -1,0 +1,42 @@
+name: Deploy
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        branches:
+            - master
+
+    pull_request_review:
+        branches:
+            - master
+
+    pull_request_review_comment:
+        branches:
+            - master
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Install dependencies
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 16.14.0
+            - name: Install yarn
+              run: npm i yarn
+            - name: Install dependencies
+              run: yarn
+            - name: Build
+              run: yarn build
+            - name: Deploy
+              run: appleboy/scp-action@master
+              with:
+                  host: ${{ secrets.HOST }}
+                  username: ${{ secrets.USERNAME }}
+                  password: ${{ secrets.PASSWORD }}
+                  key: ${{secrets.KEY}}
+                  port: ${{ secrets.PORT }}
+                  source: "./build"
+                  target: ${{secrets.TARGET}}
