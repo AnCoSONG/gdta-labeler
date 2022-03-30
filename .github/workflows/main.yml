@@ -24,12 +24,10 @@ jobs:
               uses: actions/setup-node@v2
               with:
                   node-version: 16.14.0
-            - name: Install yarn
-              run: npm i yarn
             - name: Install dependencies
-              run: yarn
+              run: npm install
             - name: Build
-              run: yarn build
+              run: npm run build
             - name: Deploy
               uses: appleboy/scp-action@master
               with:
