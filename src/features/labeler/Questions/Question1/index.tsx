@@ -1,6 +1,6 @@
 // import styles from './index.module.scss';
 import commonStyles from '../Common.module.scss';
-import {LabelDataPayload} from '../../LabelSlice'
+// import {LabelDataPayload} from '../../LabelSlice'
 import { useAppDispatch, useAppSelector } from '../../../../app/hooks';
 import { setLabelData } from '../../LabelSlice'
 export const Question1 = () => {

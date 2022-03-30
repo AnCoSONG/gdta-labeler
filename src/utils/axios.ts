@@ -1,5 +1,5 @@
 import axios from "axios";
-import { error } from "../utils/notify";
+// import { error } from "../utils/notify";
 const _axios = axios.create({
     timeout: 10000,
     baseURL: process.env.REACT_APP_API_URL,

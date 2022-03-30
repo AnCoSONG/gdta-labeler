@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 // import { useAppDispatch } from "../../app/hooks";
-import { axios, seed } from "../../utils";
+import { axios } from "../../utils";
 import styles from "./Login.module.css";
 import loader from "../../assets/loader.gif";
 import { checkChar } from "../../utils";
