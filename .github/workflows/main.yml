@@ -25,9 +25,11 @@ jobs:
               with:
                   node-version: 16.14.0
             - name: Install dependencies
-              run: npm install
+              run: |
+                npm i -g yarn
+                yarn
             - name: Build
-              run: npm run build
+              run: yarn build
             - name: Deploy
               run: appleboy/scp-action@master
               with:
