@@ -13,7 +13,7 @@ _axios.interceptors.request.use(
             "Content-Type": "application/json",
             "Authorization": "Bearer " + localStorage.getItem("token")
         };
-        console.log('request', req);
+        // console.log('request', req);
         return req;
     },
     (err) => {
@@ -24,8 +24,8 @@ _axios.interceptors.request.use(
 
 _axios.interceptors.response.use(
     (response) => {
-        console.log('response', response);
-        if (response.data.auth.access_token) {
+        // console.log('response', response);
+        if (response.data.auth && response.data.auth.access_token) {
             console.log('自动设置token');
             localStorage.setItem("token", response.data.auth.access_token);
         }

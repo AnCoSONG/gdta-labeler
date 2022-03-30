@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 // import { useAppDispatch } from "../../app/hooks";
 import { axios, seed } from "../../utils";
@@ -26,50 +26,51 @@ export const Login = () => {
     // 第一次载入时
     useEffect(() => {
         // on mount
-        const height = document.querySelector("#right")!.clientHeight;
-        const width = document.querySelector("#right")!.clientWidth;
-        setEvenImg(
-            `https://picsum.photos/seed/${seed(100000)}/${width}/${height}`
-        );
-        setOddImg(
-            `https://picsum.photos/seed/${seed(100000)}/${width}/${height}`
-        );
+        // const height = document.querySelector("#right")!.clientHeight;
+        // const width = document.querySelector("#right")!.clientWidth;
+        axios.get("/sample", { params: { count: 2 } }).then((res) => {
+            setEvenImg(res.data[0].src);
+            setOddImg(res.data[1].src);
+        });
 
         if (localStorage.getItem("token")) {
-            axios.get('/checkToken').then(res => {
-                if (res.data.auth.status === 0 || res.data.auth.status === 1){
-                    navigate('/');
+            axios.get("/checkToken").then((res) => {
+                if (res.data.auth.status === 0 || res.data.auth.status === 1) {
+                    navigate("/");
                 } else {
                     // 返回其他值说明refreshToken也过期了
-                    localStorage.removeItem('token');
-                    error('令牌已失效，请重新登录')
+                    localStorage.removeItem("token");
+                    error("令牌已失效，请重新登录");
                 }
-            })
+            });
         }
-        
     }, [navigate]);
 
     // 动态设置新图像
     useEffect(() => {
+        if (window.innerWidth < 1100) return;
         // on showOdd changed
-        const height = document.querySelector("#right")!.clientHeight;
-        const width = document.querySelector("#right")!.clientWidth;
-        if (showOdd)
-            setEvenImg(
-                `https://picsum.photos/seed/${seed(100000)}/${width}/${height}`
-            );
-        else
-            setOddImg(
-                `https://picsum.photos/seed/${seed(100000)}/${width}/${height}`
-            );
+        // const height = document.querySelector("#right")!.clientHeight;
+        // const width = document.querySelector("#right")!.clientWidth;
+        axios.get("/sample", { params: { count: 1 } }).then((res) => {
+            setTimeout(() => {
+                // change src after transition done!
+                if (showOdd) {
+                    setEvenImg(res.data[0].src);
+                } else {
+                    setOddImg(res.data[0].src);
+                }
+            }, 501);
+        });
     }, [showOdd]);
     // 定时切换odd/even图像
     useEffect(() => {
+        if (window.innerWidth < 1100) return;
         const timer = setInterval(() => {
             setShowOdd(!oddStatus.current);
             oddStatus.current = !oddStatus.current;
-            console.log("showing odd:", oddStatus.current);
-        }, 5000);
+            console.log(oddStatus.current);
+        }, 10000);
         return () => {
             clearInterval(timer);
         };
@@ -77,35 +78,18 @@ export const Login = () => {
 
     const [isOddLoaded, setOddLoaded] = useState(false);
     const [isEvenLoaded, setEvenLoaded] = useState(false);
-    // odd图像加载判断
-    useEffect(() => {
-        const right_odd = document.getElementById("right_odd")!;
-        right_odd.dataset.show = (showOdd && isOddLoaded).toString();
-        console.log(`showing odd: ${showOdd}, is odd loaded: ${isOddLoaded}`);
-    }, [isOddLoaded, showOdd]);
-
-    // even图像加载判断
-    useEffect(() => {
-        const right_even = document.getElementById("right_even")!;
-        right_even.dataset.show = (!showOdd && isEvenLoaded).toString();
-        console.log(
-            `showing event: ${!showOdd}, is even loaded: ${isEvenLoaded}`
-        );
-    }, [isEvenLoaded, showOdd]);
 
     // 登录 ========================
     const login = async () => {
         if (!checkChar(username)) {
             error("用户名不能为空且不能包含特殊符号");
             return;
-        }
-        else if (!checkChar(password)) {
+        } else if (!checkChar(password)) {
             error("密码不能为空且不能包含特殊符号");
-            return ;
-        }
-        else if (!checkChar(invitecode)) {
+            return;
+        } else if (!checkChar(invitecode)) {
             error("邀请码不能为空且不能包含特殊符号");
-            return ;
+            return;
         }
 
         try {
@@ -113,21 +97,21 @@ export const Login = () => {
                 username,
                 password: cryptolize(password),
                 invitecode,
-            })
+            });
             if (res.status === 200 || res.status === 201) {
-                console.log('Login success')
-                localStorage.setItem('token', res.data.data.access_token)
-                localStorage.setItem('uid', res.data.auth._id)
-                navigate('/')
+                console.log("Login success");
+                localStorage.setItem("token", res.data.data.access_token);
+                localStorage.setItem("uid", res.data.auth._id);
+                navigate("/");
             } else {
-                console.log(res.status)
+                console.log(res.status);
             }
-        }catch(err) {
-            console.error(err)
-            error('登录失败, 请检查用户名密码和邀请码')
-            setUsername('')
-            setPassword('')
-            setInvitecode('')
+        } catch (err) {
+            console.error(err);
+            error("登录失败, 请检查用户名密码和邀请码");
+            setUsername("");
+            setPassword("");
+            setInvitecode("");
         }
     };
 
@@ -136,13 +120,12 @@ export const Login = () => {
         setIsLoading(true);
         await login();
         setIsLoading(false);
-    }
+    };
     const onEnter = async (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
             await loginProcess();
         }
-    }
-
+    };
 
     // 登录 ========================
 
@@ -183,7 +166,14 @@ export const Login = () => {
                                 await loginProcess();
                             }}
                         >
-                            {isLoading ? <FontAwesomeIcon icon={faSpinner} spin></FontAwesomeIcon> : "Login"}
+                            {isLoading ? (
+                                <FontAwesomeIcon
+                                    icon={faSpinner}
+                                    spin
+                                ></FontAwesomeIcon>
+                            ) : (
+                                "Login"
+                            )}
                         </button>
                     </div>
                     <div className={styles.left_box_footer}>GDTA@inlab</div>
@@ -196,7 +186,7 @@ export const Login = () => {
                     data-show={showOdd && isOddLoaded}
                     alt="random odd"
                     src={oddImg}
-                    onLoadStart={() => setEvenLoaded(false)}
+                    onLoadStart={() => setOddLoaded(false)}
                     onLoad={() => {
                         setOddLoaded(true);
                     }}
