@@ -12,7 +12,7 @@ export type LabelHistory = {
     img_id: string;
     img_title: string;
     img_src: string;
-    valid: boolean;
+    valid: number;
     finished: boolean;
     styles: boolean[];
     audience_age: boolean[];
@@ -20,7 +20,7 @@ export type LabelHistory = {
 };
 
 export type LabelData = {
-    q1: boolean;
+    q1: number;
     // 现代, 科技, 卡通/插画, 写实/摄影, 装饰, 复古/古典, 简约
     q2: boolean[];
     q3: boolean[];
@@ -48,7 +48,7 @@ export type LabelDataForMultiple = {
 
 export type LabelDataPayload = {
     question: "q1" | "q2" | "q3" | "q4";
-    data: boolean | LabelDataForMultiple;
+    data: number | LabelDataForMultiple;
 };
 
 type HistoryPayload = {
@@ -65,11 +65,17 @@ type LabelSliceType = {
     labelImageLoaded: boolean;
 };
 
+export enum ValidType {
+    Valid = 0,
+    ValidAfterProcessing = 1,
+    Invalid = 2,
+}
+
 export const initState: LabelSliceType = {
     history: [],
     count: 20,
     labelData: {
-        q1: true,
+        q1: 0,
         q2: [false, false, false, false, false, false, false],
         q3: [false, false],
         q4: [false, false, false, false, false],
@@ -188,7 +194,7 @@ export const labelSlice = createSlice({
             // console.log(action.type);
             switch (action.payload.question) {
                 case "q1":
-                    if (typeof action.payload.data === "boolean") {
+                    if (typeof action.payload.data === "number") {
                         // q1会清空其他选项
                         state.labelData = { ...initState.labelData };
                         state.labelData.q1 = action.payload.data;

@@ -1,6 +1,6 @@
 // import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
-import { selectAll, setLabelData } from "../../LabelSlice";
+import { selectAll, setLabelData, ValidType } from "../../LabelSlice";
 import commonStyles from "../Common.module.scss";
 
 export const Question4 = () => {
@@ -8,7 +8,7 @@ export const Question4 = () => {
     const valid = useAppSelector((state) => state.labeler.labelData.q1);
     const dispatch = useAppDispatch();
     return (
-        <div className={commonStyles.question_card} data-inactive={!valid} onDoubleClick={() => {
+        <div className={commonStyles.question_card} data-inactive={valid===ValidType.Invalid} onDoubleClick={() => {
             dispatch(selectAll("q4"));
         }}>
             <div className={commonStyles.question_card_title}>

@@ -29,7 +29,15 @@ export const HistoryItem = (prop: PropType) => {
                     <div className={styles.item_secondline_check_wrapper}>
                         <div
                             className={styles.check}
-                            data-checked={prop.valid}
+                            data-checked={prop.valid===0}
+                        ></div>
+                        <div
+                            className={styles.check}
+                            data-checked={prop.valid===1}
+                        ></div>
+                        <div
+                            className={styles.check}
+                            data-checked={prop.valid===2}
                         ></div>
                     </div>
                     <div className={styles.item_secondline_check_wrapper}>

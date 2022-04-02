@@ -2,7 +2,7 @@
 import commonStyles from '../Common.module.scss';
 // import {LabelDataPayload} from '../../LabelSlice'
 import { useAppDispatch, useAppSelector } from '../../../../app/hooks';
-import { setLabelData } from '../../LabelSlice'
+import { setLabelData, ValidType } from '../../LabelSlice'
 export const Question1 = () => {
     const dispatch = useAppDispatch()
     const state = useAppSelector(state => state.labeler.labelData.q1)
@@ -13,18 +13,25 @@ export const Question1 = () => {
             </div>
             <div
                 className={commonStyles.line_btn}
-                onClick={() => dispatch(setLabelData({question: "q1", data: true}))}
-                data-selected={state}
+                onClick={() => dispatch(setLabelData({question: "q1", data: ValidType.Valid}))}
+                data-selected={state === ValidType.Valid}
             >
-                是
+                有效
             </div>
             <div
                 className={commonStyles.line_btn}
-                onClick={() => dispatch(setLabelData({question: "q1", data: false}))}
-                data-selected={!state}
+                onClick={() => dispatch(setLabelData({question: "q1", data: ValidType.ValidAfterProcessing}))}
+                data-selected={state === ValidType.ValidAfterProcessing}
+            >
+                处理后有效
+            </div>
+            <div
+                className={commonStyles.line_btn}
+                onClick={() => dispatch(setLabelData({question: "q1", data: ValidType.Invalid}))}
+                data-selected={state === ValidType.Invalid}
                 data-last
             >
-                否
+                无效
             </div>
         </div>
     );

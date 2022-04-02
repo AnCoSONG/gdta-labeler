@@ -1,9 +1,4 @@
-import React, {
-    useEffect,
-    useState,
-    useRef,
-    useMemo,
-} from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import styles from "./Labeler.module.scss";
@@ -39,6 +34,7 @@ import {
     setLabelDataAsObject,
     setLabelImageLoadedStatus,
     stylesMapping,
+    ValidType,
 } from "./LabelSlice";
 import { Loader } from "../loading/loader";
 import { Button, Dialog, Pagination, Popover } from "element-react";
@@ -356,7 +352,7 @@ export const Labeler = () => {
         if (confirmBtnStatus === "still") {
             setConfirmBtnStatus("loading");
             // check if the image is already labeled
-            if (labelData.q1) {
+            if (labelData.q1 !== ValidType.Invalid) {
                 // 如果其他元素都是false，则说明没有标注过
                 const isQ2Filled = labelData.q2.some((item) => item === true);
                 const isQ3Filled = labelData.q3.some((item) => item === true);
@@ -364,7 +360,7 @@ export const Labeler = () => {
                 const result = isQ2Filled && isQ3Filled && isQ4Filled;
                 console.log(result, isQ2Filled, isQ3Filled, isQ4Filled);
                 if (!result) {
-                    error("当您认为图像有效时，需要完成在下方完成标注");
+                    error("当您认为图像有效时，需要完成在右侧完成全部标注");
                     setConfirmBtnStatus("still");
                     return;
                 }
@@ -849,7 +845,8 @@ export const Labeler = () => {
                                     <FontAwesomeIcon icon={faAtom} />
                                     <a
                                         target="_blank"
-                                        href={labelImage.project_url} rel="noreferrer"
+                                        href={labelImage.project_url}
+                                        rel="noreferrer"
                                     >
                                         {imgLoaded
                                             ? labelImage.source
@@ -1060,14 +1057,23 @@ export const Labeler = () => {
                                                     styles.dialog_conntent_info_data
                                                 }
                                                 style={{
-                                                    color: dialogCurrentData.valid
+                                                    color: dialogCurrentData.valid < ValidType.Invalid
                                                         ? "green"
                                                         : "red",
                                                 }}
                                             >
-                                                {dialogCurrentData.valid
-                                                    ? "✔"
-                                                    : "✘"}
+                                                {(() => {
+                                                    switch (dialogCurrentData.valid) {
+                                                        case ValidType.Valid:
+                                                            return "有效";
+                                                        case ValidType.ValidAfterProcessing:
+                                                            return "处理后有效";
+                                                        case ValidType.Invalid:
+                                                            return "无效";
+                                                        default:
+                                                            return "未知";
+                                                    }
+                                                })()}
                                             </div>
                                         </div>
                                         <div
@@ -1273,7 +1279,9 @@ export const Labeler = () => {
                         layout="sizes, prev, pager, next"
                         total={countState}
                         small={false}
-                        pageSizes={[1, 2, 5, 10, 15, 25, 50, 100, 200, 500, 1000]}
+                        pageSizes={[
+                            1, 2, 5, 10, 15, 25, 50, 100, 200, 500, 1000,
+                        ]}
                         currentPage={page}
                         onCurrentChange={(page) => {
                             if (page) {

@@ -1,6 +1,6 @@
 import commonStyles from "../Common.module.scss";
 import { Popover } from "element-react/next";
-import { setLabelData } from '../../LabelSlice'
+import { setLabelData, ValidType } from '../../LabelSlice'
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
 
 export const Question2 = () => {
@@ -8,7 +8,7 @@ export const Question2 = () => {
     const valid = useAppSelector(state => state.labeler.labelData.q1)
     const dispatch = useAppDispatch()
     return (
-        <div className={commonStyles.question_card} data-inactive={!valid}>
+        <div className={commonStyles.question_card} data-inactive={valid===ValidType.Invalid}>
             <div className={commonStyles.question_card_title}>
                 2. 这幅作品属于哪些风格?(多选)
             </div>
