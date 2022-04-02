@@ -42,3 +42,4 @@ jobs:
                   port: ${{ secrets.PORT }}
                   source: "./auto-build"
                   target: ${{secrets.TARGET}}
+                  rm: true
