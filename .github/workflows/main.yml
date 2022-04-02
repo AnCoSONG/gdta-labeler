@@ -31,6 +31,6 @@ jobs:
                   password: ${{ secrets.PASSWORD }}
                   # key: ${{secrets.KEY}}
                   port: ${{ secrets.PORT }}
-                  source: "./build/*"
+                  source: "./build"
                   target: ${{secrets.TARGET}}
                   rm: true
