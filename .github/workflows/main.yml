@@ -35,3 +35,15 @@ jobs:
                   source: "./auto-build"
                   target: ${{secrets.TARGET}}
                   rm: true
+
+            - name: extract files
+              uses: appleboy/ssh-action@master
+              with: 
+                    host: ${{ secrets.HOST }}
+                    username: ${{ secrets.USERNAME }}
+                    password: ${{ secrets.PASSWORD }}
+                    port: ${{ secrets.PORT }}
+                    script: |
+                        cd ${{ secrets.TARGET }}
+                        mv ./auto-build/* ./
+                        rm -rf ./auto-build
