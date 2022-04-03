@@ -1182,7 +1182,7 @@ export const Labeler = () => {
                                 spin
                             ></FontAwesomeIcon>
                         ) : (
-                            "确定"
+                            "编辑这条打标记录"
                         )}
                     </Button>
                 </Dialog.Footer>
