@@ -19,14 +19,14 @@ export const Question1 = () => {
                 有效
             </div>
             <div
-                className={commonStyles.line_btn}
+                className={commonStyles.line_btn + " " + commonStyles.after_process}
                 onClick={() => dispatch(setLabelData({question: "q1", data: ValidType.ValidAfterProcessing}))}
                 data-selected={state === ValidType.ValidAfterProcessing}
             >
                 处理后有效
             </div>
             <div
-                className={commonStyles.line_btn}
+                className={commonStyles.line_btn + " " + commonStyles.invalid }
                 onClick={() => dispatch(setLabelData({question: "q1", data: ValidType.Invalid}))}
                 data-selected={state === ValidType.Invalid}
                 data-last

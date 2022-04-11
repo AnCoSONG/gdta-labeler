@@ -3,7 +3,24 @@ import { axios } from "../../utils";
 import { success } from "../../utils/notify";
 
 export const stylesMapping =
-    "现代,科技,卡通/插画,写实/摄影,装饰,复古/古典,简约".split(",");
+    "简约/简洁,科技/科幻,复古/古典,卡通/插画,复杂/装饰,写实/摄影,字体设计,其他".split(
+        ","
+    );
+export const i18nstyleMapping =
+    "Minimalism,Tech/Sci-Fi,Vintage,Cartoon/Illustration,Decoration,Realism,Typography,Other".split(
+        ","
+    );
+
+export const contents = [
+    "以少量的设计元素组合的平面设计形式，常常辅以留白来传达空旷的意境或激发读者的想象。",
+    "利用具有科技感的视觉元素，如芯片、电子、通讯、网络、荧光、太空等，营造出先锋、前沿的视觉体验。",
+    "流行于上个世纪或更早的设计形式，带给现代人传统、复古的观看体验。",
+    "以手绘作为主要技法的设计形式，通常以夸张的人物或动物作为设计主体。",
+    "以大量装饰元素的堆叠作为主要的设计方法，展现出华丽、复杂的观感。",
+    "以摄影或拟真的图像作为设计的主要元素，传达出具象、真实的观感。",
+    "画面以字体以及字体排版为主要设计元素的风格",
+    "不属于以上7个风格",
+]
 export const genderMapping = "男性,女性".split(",");
 export const agesMapping = "青少年,青年,壮年,中年,老年".split(",");
 
@@ -21,7 +38,7 @@ export type LabelHistory = {
 
 export type LabelData = {
     q1: number;
-    // 现代, 科技, 卡通/插画, 写实/摄影, 装饰, 复古/古典, 简约
+    // 简约/简洁,科技,复古/古典,卡通/插画,复杂/装饰,写实/摄影,字体设计,其他
     q2: boolean[];
     q3: boolean[];
     q4: boolean[];
@@ -76,7 +93,7 @@ export const initState: LabelSliceType = {
     count: 20,
     labelData: {
         q1: 0,
-        q2: [false, false, false, false, false, false, false],
+        q2: [false, false, false, false, false, false, false, false],
         q3: [false, false],
         q4: [false, false, false, false, false],
     },

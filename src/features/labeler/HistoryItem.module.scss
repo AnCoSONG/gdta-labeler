@@ -114,8 +114,16 @@
                     margin-right: 8px;
 
                     &[data-checked="true"] {
-                        background-color: #00b300;
+                        background-color: var(--color-success);
                         // box-shadow: 0px 0px 0px 2px #00b300;
+                    }
+
+                    &.after_process[data-checked="true"]{
+                        background-color: var(--color-warning);
+                    }
+
+                    &.check_invalid[data-checked="true"]{
+                        background-color: var(--color-danger);
                     }
 
                     &:last-child{

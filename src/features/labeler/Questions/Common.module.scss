@@ -54,7 +54,17 @@
     }
 
     &[data-selected="true"] {
-        background-color: var(--color-primary);
+        background-color: var(--color-success);
+        color: white;
+    }
+
+    &.after_process[data-selected="true"] {
+        background-color: var(--color-warning);
+        color: white;
+    }
+
+    &.invalid[data-selected="true"] {
+        background-color: var(--color-danger);
         color: white;
     }
 }

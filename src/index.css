@@ -15,4 +15,7 @@ code {
 
 :root {
   --color-primary: #0070f3;
+  --color-success: #4caf50;
+  --color-warning:  #ff9800;
+  --color-danger: #f44336;
 }

@@ -32,11 +32,11 @@ export const HistoryItem = (prop: PropType) => {
                             data-checked={prop.valid===0}
                         ></div>
                         <div
-                            className={styles.check}
+                            className={styles.check +" " + styles.after_process}
                             data-checked={prop.valid===1}
                         ></div>
                         <div
-                            className={styles.check}
+                            className={styles.check+" "+styles.check_invalid}
                             data-checked={prop.valid===2}
                         ></div>
                     </div>
