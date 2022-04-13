@@ -106,7 +106,7 @@ export const Labeler = () => {
                 })
                 .catch((err) => {
                     console.log(err);
-                    error(err.name);
+                    error("登录失效，请重新登录");
                     localStorage.removeItem("token");
                     navigate("/login");
                 });
