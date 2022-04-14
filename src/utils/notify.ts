@@ -37,6 +37,10 @@ export const confirm = (
     return MessageBox.confirm(msg, title, { type });
 };
 
+export const messageAlert = (msg: string, title: string) => {
+    MessageBox.alert(msg, title);
+} 
+
 // export const success = (options: ElementReact.MessageOptions) => {
 //     Message.success(options)
 // }

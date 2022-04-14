@@ -80,6 +80,7 @@ type LabelSliceType = {
     labelImage: LabelImage;
     editing: boolean;
     labelImageLoaded: boolean;
+    done: boolean;
 };
 
 export enum ValidType {
@@ -110,6 +111,7 @@ export const initState: LabelSliceType = {
     },
     editing: false,
     labelImageLoaded: false,
+    done: false
 };
 
 export const fetchImageDataAsync = createAsyncThunk(
@@ -117,15 +119,15 @@ export const fetchImageDataAsync = createAsyncThunk(
     async (labeler_id: string) => {
         // 拿取图片之前先把localStorage清空
         console.log("正在获取新的待打标图像");
-        let response = await axios.get("/imgs/next", {
+        let response = await axios.get("/task/next", {
             params: { labeler_id: labeler_id },
         });
         console.log("fetchImageData", response);
         if (response.status === 200) {
             if (response.data.message === "all done") {
                 success(
-                    "您已打标完成全部打标内容！打标界面已锁定，您可以自行退出.",
-                    5000
+                    "您已打标完成当前全部打标内容！",
+                    2000
                 );
                 // all done image
                 return {
@@ -303,6 +305,7 @@ export const labelSlice = createSlice({
                 (state, action: PayloadAction<LabelImage>) => {
                     if (action.payload._id === "Thanks") {
                         console.log("Thanks payload,", action.payload);
+                        state.done = true;
                     }
                     console.log(action.payload);
                     state.labelImage = { ...action.payload };

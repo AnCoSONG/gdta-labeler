@@ -20,8 +20,10 @@ import {
     faSpinner,
     faCaretDown,
     faFlag,
+    faShare,
+    faEdit,
 } from "@fortawesome/free-solid-svg-icons";
-import { error, success, warn } from "../../utils/notify";
+import { error, messageAlert, success, warn } from "../../utils/notify";
 import { setUserInfo, initUserState } from "../user/userSlice";
 import {
     agesMapping,
@@ -367,7 +369,7 @@ export const Labeler = () => {
             }
             // 上传打标记录
             const res = await axios
-                .post("/record", {
+                .post("/task/finish", {
                     img_id: labelImage._id,
                     img_src: labelImage.src,
                     img_title: labelImage.title,
@@ -457,7 +459,7 @@ export const Labeler = () => {
                 //* finished: false 实现
                 //* 这种skip会把当前没有打标好的数据也上传，但会标记为unfinished
                 const create_unfinished_res = await axios
-                    .post("/record", {
+                    .post("/task/finish", {
                         img_id: labelImage._id,
                         img_src: labelImage.src,
                         img_title: labelImage.title,
@@ -501,13 +503,19 @@ export const Labeler = () => {
     const [imgCount, setImgCount] = useState(0);
     const [labeledCount, setLabeledCount] = useState(0);
     const [unfinishedCount, setUnfinishedCount] = useState(0);
+    const [currentTaskLabeledCount, setCurrentTaskLabeledCount] = useState(0);
+    const [currentTaskImgCount, setCurrentTaskImgCount] = useState(0);
     const toBeLabeledCount = useMemo(
         () => imgCount - labeledCount - unfinishedCount,
         [imgCount, labeledCount, unfinishedCount]
     );
+    const currentTaskToBeLabeledCount = useMemo(
+        () => currentTaskImgCount - currentTaskLabeledCount,
+        [currentTaskImgCount, currentTaskLabeledCount]
+    );
 
     const onDropdownHoverGetData = async (e: boolean) => {
-        console.log(e);
+        // console.log(e);
         if (e) {
             const imgCountRes = await axios.get("/imgs/count").catch((e) => {
                 error(e.name);
@@ -547,6 +555,36 @@ export const Labeler = () => {
 
             if (unfinishedCountRes) {
                 setUnfinishedCount(unfinishedCountRes.data.data);
+            }
+
+            const currentTaskLabeledCountRes = await axios
+                .get("/task/progress", {
+                    params: {
+                        labeler_id: userState.id,
+                    },
+                })
+                .catch((e) => {
+                    error(e.name);
+                    console.error(e);
+                });
+            if (currentTaskLabeledCountRes) {
+                setCurrentTaskLabeledCount(
+                    currentTaskLabeledCountRes.data.data
+                );
+            }
+
+            const currentTaskImgCountRes = await axios
+                .get("/task/count", {
+                    params: {
+                        labeler_id: userState.id,
+                    },
+                })
+                .catch((e) => {
+                    error(e.name);
+                    console.error(e);
+                });
+            if (currentTaskImgCountRes) {
+                setCurrentTaskImgCount(currentTaskImgCountRes.data.data);
             }
         }
     };
@@ -642,7 +680,7 @@ export const Labeler = () => {
                 (acc, cur, idx) => {
                     // console.log(acc, cur, idx)
                     if (cur) {
-                        return genderMapping[idx] + " " + acc;
+                        return acc + " " + genderMapping[idx];
                     } else {
                         return acc;
                     }
@@ -665,7 +703,7 @@ export const Labeler = () => {
                 (acc, cur, idx) => {
                     // console.log(acc, cur, idx)
                     if (cur) {
-                        return agesMapping[idx] + " " + acc;
+                        return acc + " " + agesMapping[idx];
                     } else {
                         return acc;
                     }
@@ -681,6 +719,38 @@ export const Labeler = () => {
             return "Unknown";
         }
     }, [dialogCurrentData]);
+
+    const done = useAppSelector((state) => state.labeler.done);
+
+    const [finishedTasks, setFinishedTasks] = useState<{_id: string, range: [number, number], progress: number, finished: boolean}[]>([]);
+    useEffect(() => {
+        if (done) {
+            axios
+                .get("/task/getFinishedTask", {
+                    params: {
+                        labeler_id: userState.id,
+                    },
+                })
+                .then((res) => {
+                    if (res) {
+                        setFinishedTasks(res.data.data);
+                    }
+                })
+                .catch((e) => {
+                    error(e.name);
+                    console.error(e);
+                });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [done]);
+
+    // 申请
+    function applyNewTask(
+        e: React.MouseEvent<HTMLDivElement, MouseEvent>
+    ): void {
+        e.preventDefault();
+        messageAlert("请联系工具人钉钉或微信申请", "提示");
+    }
 
     return (
         <div className={styles.wrapper}>
@@ -733,21 +803,41 @@ export const Labeler = () => {
                         menu={
                             <Dropdown.Menu
                                 style={{
-                                    width: "200px",
+                                    width: "240px",
                                     fontSize: "0.9rem",
                                     fontWeight: "400",
                                 }}
                             >
-                                <Dropdown.Item>共 {imgCount} 张</Dropdown.Item>
                                 <Dropdown.Item>
-                                    已完成 {labeledCount} 张
+                                    用户名: {userState.username}
                                 </Dropdown.Item>
-
-                                <Dropdown.Item>
-                                    已跳过 {unfinishedCount} 张
+                                {currentTaskImgCount != null && (
+                                    <>
+                                        <Dropdown.Item divided>
+                                            当前任务共完成/跳过{" "}
+                                            {currentTaskLabeledCount} 张
+                                        </Dropdown.Item>
+                                        <Dropdown.Item>
+                                            当前任务共 {currentTaskImgCount} 张
+                                        </Dropdown.Item>
+                                        <Dropdown.Item>
+                                            当前任务还有{" "}
+                                            {currentTaskToBeLabeledCount}
+                                            张 待标注
+                                        </Dropdown.Item>
+                                    </>
+                                )}
+                                <Dropdown.Item divided>
+                                    共完成 {labeledCount} 张
                                 </Dropdown.Item>
                                 <Dropdown.Item>
-                                    还有 {toBeLabeledCount} 张待标注
+                                    共跳过 {unfinishedCount} 张
+                                </Dropdown.Item>
+                                <Dropdown.Item>
+                                    共还有 {toBeLabeledCount} 张可标注
+                                </Dropdown.Item>
+                                <Dropdown.Item>
+                                    总共 {imgCount} 张
                                 </Dropdown.Item>
 
                                 <Dropdown.Item command="exit" divided>
@@ -767,210 +857,376 @@ export const Labeler = () => {
                     </Dropdown>
                 </div>
             </nav>
-            <main className={styles.main}>
-                {/* Grid Layout */}
-                <div className={styles.main_board_wrapper}>
-                    <div className={styles.main_board_inner}>
-                        <div className={styles.main_board_inner_title_wrapper}>
+            {!done || editing_mode ? (
+                <main className={styles.main}>
+                    {/* Grid Layout */}
+                    <div className={styles.main_board_wrapper}>
+                        <div className={styles.main_board_inner}>
                             <div
                                 className={
-                                    styles.main_board_inner_title_wrapper_title
+                                    styles.main_board_inner_title_wrapper
                                 }
                             >
-                                {imgLoaded ? labelImage.title : "Loading..."}
-                            </div>
-                            <div
-                                className={
-                                    styles.main_board_inner_title_wrapper_infos
-                                }
-                            >
-                                <div>
-                                    <FontAwesomeIcon
-                                        icon={faIdCard}
-                                    ></FontAwesomeIcon>
-                                    <Popover
-                                        trigger="hover"
-                                        content={"ID: " + labelImage._id}
-                                        width="auto"
-                                    >
-                                        <span
-                                            style={{
-                                                color: "white",
-                                                borderRadius: "4px",
-                                                backgroundColor: "#5e5e5e",
-                                                padding: "2px 4px",
-                                            }}
-                                        >
-                                            {imgLoaded
-                                                ? labelImage._id.slice(16, 24)
-                                                : "Unknown"}
-                                        </span>
-                                    </Popover>
-                                </div>
-                                <div>
-                                    <FontAwesomeIcon
-                                        icon={faUserFriends}
-                                    ></FontAwesomeIcon>
-                                    <span
-                                        style={{
-                                            maxWidth: "100px",
-                                            whiteSpace: "nowrap",
-                                            textOverflow: "ellipsis",
-                                            overflow: "hidden",
-                                        }}
-                                    >
-                                        {imgLoaded
-                                            ? labelImage.author
-                                            : "Unknown"}
-                                    </span>
-                                </div>
-                                <div>
-                                    <FontAwesomeIcon
-                                        icon={faClock}
-                                    ></FontAwesomeIcon>
-                                    <span
-                                        style={{
-                                            maxWidth: "100px",
-                                            whiteSpace: "nowrap",
-                                            textOverflow: "ellipsis",
-                                            overflow: "hidden",
-                                        }}
-                                    >
-                                        {imgLoaded
-                                            ? labelImage.created_time
-                                            : "Unknown"}
-                                    </span>
-                                </div>
-                                <div>
-                                    <FontAwesomeIcon icon={faAtom} />
-                                    <a
-                                        target="_blank"
-                                        href={labelImage.project_url}
-                                        rel="noreferrer"
-                                    >
-                                        {imgLoaded
-                                            ? labelImage.source
-                                            : "Unknown"}
-                                    </a>
+                                <div
+                                    className={
+                                        styles.main_board_inner_title_wrapper_title
+                                    }
+                                >
+                                    {imgLoaded
+                                        ? labelImage.title
+                                        : "Loading..."}
                                 </div>
                                 <div
                                     className={
-                                        styles.main_board_inner_title_wrapper_infos_tags
+                                        styles.main_board_inner_title_wrapper_infos
                                     }
                                 >
-                                    <FontAwesomeIcon
-                                        icon={faTags}
-                                    ></FontAwesomeIcon>
-                                    {/* 这里根据后端数据 */}
-                                    {labelImage.tags &&
-                                        labelImage.tags.map((tag, index) => {
-                                            return (
-                                                <span key={tag + index}>
-                                                    <Tag type="primary">
-                                                        {tag}
-                                                    </Tag>
-                                                </span>
+                                    <div>
+                                        <FontAwesomeIcon
+                                            icon={faIdCard}
+                                        ></FontAwesomeIcon>
+                                        <Popover
+                                            trigger="hover"
+                                            content={"ID: " + labelImage._id}
+                                            width="auto"
+                                        >
+                                            <span
+                                                style={{
+                                                    color: "white",
+                                                    borderRadius: "4px",
+                                                    backgroundColor: "#5e5e5e",
+                                                    padding: "2px 4px",
+                                                }}
+                                            >
+                                                {imgLoaded
+                                                    ? labelImage._id.slice(
+                                                          16,
+                                                          24
+                                                      )
+                                                    : "Unknown"}
+                                            </span>
+                                        </Popover>
+                                    </div>
+                                    <div>
+                                        <FontAwesomeIcon
+                                            icon={faUserFriends}
+                                        ></FontAwesomeIcon>
+                                        <span
+                                            style={{
+                                                maxWidth: "100px",
+                                                whiteSpace: "nowrap",
+                                                textOverflow: "ellipsis",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            {imgLoaded
+                                                ? labelImage.author
+                                                : "Unknown"}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <FontAwesomeIcon
+                                            icon={faClock}
+                                        ></FontAwesomeIcon>
+                                        <span
+                                            style={{
+                                                maxWidth: "100px",
+                                                whiteSpace: "nowrap",
+                                                textOverflow: "ellipsis",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            {imgLoaded
+                                                ? labelImage.created_time
+                                                : "Unknown"}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <FontAwesomeIcon icon={faAtom} />
+                                        <a
+                                            target="_blank"
+                                            href={labelImage.project_url}
+                                            rel="noreferrer"
+                                        >
+                                            {imgLoaded
+                                                ? labelImage.source
+                                                : "Unknown"}
+                                        </a>
+                                    </div>
+                                    <div
+                                        className={
+                                            styles.main_board_inner_title_wrapper_infos_tags
+                                        }
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faTags}
+                                        ></FontAwesomeIcon>
+                                        {/* 这里根据后端数据 */}
+                                        {labelImage.tags &&
+                                            labelImage.tags.map(
+                                                (tag, index) => {
+                                                    return (
+                                                        <span key={tag + index}>
+                                                            <Tag type="primary">
+                                                                {tag}
+                                                            </Tag>
+                                                        </span>
+                                                    );
+                                                }
+                                            )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={styles.main_board_inner_process}>
+                                <div
+                                    id="content"
+                                    className={
+                                        styles.main_board_inner_process_content
+                                    }
+                                    ref={contentRef}
+                                    onChange={(e) => console.log("content", e)}
+                                    draggable={false}
+                                    onMouseDown={(e) => onMousemovestart(e)}
+                                    onMouseMove={(e) => onMouseMoveover(e)}
+                                    onMouseUp={(e) => onMouseMoveend(e)}
+                                    onWheel={(e) => onMouseWheel(e)}
+                                >
+                                    <img
+                                        ref={imgRef}
+                                        src={labelImage.src}
+                                        alt=""
+                                        onLoad={() => {
+                                            console.log("onload");
+                                            // setImgLoaded(true)
+                                            dispatch(
+                                                setLabelImageLoadedStatus(true)
                                             );
-                                        })}
+                                        }}
+                                        draggable={false}
+                                        onDoubleClick={(e) =>
+                                            onDoubleClicked(e)
+                                        }
+                                    />
+                                    {!imgLoaded && <Loader />}
                                 </div>
                             </div>
                         </div>
-                        <div className={styles.main_board_inner_process}>
+                    </div>
+                    <div className={styles.label_wrapper}>
+                        <div className={styles.label_inner}>
                             <div
-                                id="content"
-                                className={
-                                    styles.main_board_inner_process_content
-                                }
-                                ref={contentRef}
-                                onChange={(e) => console.log("content", e)}
-                                draggable={false}
-                                onMouseDown={(e) => onMousemovestart(e)}
-                                onMouseMove={(e) => onMouseMoveover(e)}
-                                onMouseUp={(e) => onMouseMoveend(e)}
-                                onWheel={(e) => onMouseWheel(e)}
+                                className={styles.label_cards_wrapper}
+                                // style={{ height: `${calcedHeight.current}px` }}
                             >
-                                <img
-                                    ref={imgRef}
-                                    src={labelImage.src}
-                                    alt=""
-                                    onLoad={() => {
-                                        console.log("onload");
-                                        // setImgLoaded(true)
-                                        dispatch(
-                                            setLabelImageLoadedStatus(true)
-                                        );
+                                <Q1 />
+                                <Q2 />
+                                <Q3 />
+                                <Q4 />
+                            </div>
+                            <div className={styles.label_confirm}>
+                                <div
+                                    className={styles.label_confirm_skip}
+                                    data-forbidden={
+                                        foribidden || !imgLoaded || editing_mode
+                                    }
+                                    onClick={(e) => onSkipClick(e)}
+                                >
+                                    {(() => {
+                                        switch (skipBtnStatus) {
+                                            case "still":
+                                                return "跳过";
+                                            case "loading":
+                                                return (
+                                                    <FontAwesomeIcon
+                                                        icon={faSpinner}
+                                                        spin
+                                                    ></FontAwesomeIcon>
+                                                );
+                                            default:
+                                                return "跳过";
+                                        }
+                                    })()}
+                                </div>
+                                <div
+                                    className={styles.label_confirm_confirm}
+                                    data-forbidden={foribidden || !imgLoaded}
+                                    onClick={(e) => {
+                                        onConfirmClick(e);
                                     }}
-                                    draggable={false}
-                                    onDoubleClick={(e) => onDoubleClicked(e)}
-                                />
-                                {!imgLoaded && <Loader />}
+                                >
+                                    {(() => {
+                                        switch (confirmBtnStatus) {
+                                            case "still":
+                                                return "确认";
+                                            case "loading":
+                                                return (
+                                                    <FontAwesomeIcon
+                                                        icon={faSpinner}
+                                                        spin
+                                                    ></FontAwesomeIcon>
+                                                );
+                                            default:
+                                                return "确认";
+                                        }
+                                    })()}
+                                </div>
                             </div>
+                            {/* <div className={styles.}></div> */}
                         </div>
                     </div>
-                </div>
-                <div className={styles.label_wrapper}>
-                    <div className={styles.label_inner}>
-                        <div
-                            className={styles.label_cards_wrapper}
-                            // style={{ height: `${calcedHeight.current}px` }}
-                        >
-                            <Q1 />
-                            <Q2 />
-                            <Q3 />
-                            <Q4 />
-                        </div>
-                        <div className={styles.label_confirm}>
+                </main>
+            ) : (
+                <main className={styles.main_done}>
+                    <div className={styles.main_done_wrapper}>
+                        <div className={styles.main_done_wrapper_title}>
                             <div
-                                className={styles.label_confirm_skip}
-                                data-forbidden={
-                                    foribidden || !imgLoaded || editing_mode
+                                className={styles.main_done_wrapper_title_text}
+                            >
+                                GDTA 打标工具
+                            </div>
+                            <div
+                                className={styles.main_done_wrapper_title_desc}
+                            >
+                                {finishedTasks.length > 0? `您已完成${finishedTasks.length}项任务`: "您暂无打标任务"}
+                            </div>
+                        </div>
+                        <div className={styles.main_done_wrapper_content}>
+                            <div
+                                className={
+                                    styles.main_done_wrapper_content_column
                                 }
-                                onClick={(e) => onSkipClick(e)}
                             >
-                                {(() => {
-                                    switch (skipBtnStatus) {
-                                        case "still":
-                                            return "跳过";
-                                        case "loading":
-                                            return (
-                                                <FontAwesomeIcon
-                                                    icon={faSpinner}
-                                                    spin
-                                                ></FontAwesomeIcon>
-                                            );
-                                        default:
-                                            return "跳过";
+                                <div
+                                    className={
+                                        styles.main_done_wrapper_content_column_title
                                     }
-                                })()}
+                                >
+                                    操作
+                                </div>
+                                <div
+                                    className={
+                                        styles.main_done_wrapper_content_item
+                                    }
+                                    onClick={(e) => applyNewTask(e)}
+                                >
+                                    <div
+                                        className={
+                                            styles.main_done_wrapper_content_item_icon
+                                        }
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faShare}
+                                        ></FontAwesomeIcon>
+                                    </div>
+                                    <div
+                                        className={
+                                            styles.main_done_wrapper_content_item_right
+                                        }
+                                    >
+                                        <div
+                                            className={
+                                                styles.main_done_wrapper_content_item_right_title
+                                            }
+                                        >
+                                            申请新打标任务
+                                        </div>
+                                        <div
+                                            className={
+                                                styles.main_done_wrapper_content_item_right_desc
+                                            }
+                                        >
+                                            您也可以直接联系工具人
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    className={
+                                        styles.main_done_wrapper_content_item
+                                    }
+                                    onClick={(e) => {
+                                        setHistoryOn(true);
+                                    }}
+                                >
+                                    <div
+                                        className={
+                                            styles.main_done_wrapper_content_item_icon
+                                        }
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faEdit}
+                                        ></FontAwesomeIcon>
+                                    </div>
+                                    <div
+                                        className={
+                                            styles.main_done_wrapper_content_item_right
+                                        }
+                                    >
+                                        <div
+                                            className={
+                                                styles.main_done_wrapper_content_item_right_title
+                                            }
+                                        >
+                                            编辑已完成内容
+                                        </div>
+                                        <div
+                                            className={
+                                                styles.main_done_wrapper_content_item_right_desc
+                                            }
+                                        >
+                                            您也可以点击左上角按钮进行编辑
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div
-                                className={styles.label_confirm_confirm}
-                                data-forbidden={foribidden || !imgLoaded}
-                                onClick={(e) => {
-                                    onConfirmClick(e);
-                                }}
+                                className={
+                                    styles.main_done_wrapper_content_column
+                                }
                             >
-                                {(() => {
-                                    switch (confirmBtnStatus) {
-                                        case "still":
-                                            return "确认";
-                                        case "loading":
-                                            return (
-                                                <FontAwesomeIcon
-                                                    icon={faSpinner}
-                                                    spin
-                                                ></FontAwesomeIcon>
-                                            );
-                                        default:
-                                            return "确认";
+                                <div
+                                    className={
+                                        styles.main_done_wrapper_content_column_title
                                     }
-                                })()}
+                                >
+                                    已完成
+                                </div>
+                                <div
+                                    className={
+                                        styles.main_done_wrapper_content_column_scrollview
+                                    }
+                                >
+                                    {finishedTasks.length > 0 ? finishedTasks.map((item) => {
+                                        return (
+                                            <div
+                                                key={item._id}
+                                                className={
+                                                    styles.main_done_wrapper_content_item2
+                                                }
+                                            >
+                                                <div
+                                                    className={
+                                                        styles.main_done_wrapper_content_item2_text
+                                                    }
+                                                >
+                                                    <b>打标任务 ID</b>: {item._id.split('').slice(16, 24).join('')}
+                                                </div>
+                                                <div
+                                                    className={
+                                                        styles.main_done_wrapper_content_item2_text
+                                                    }
+                                                >
+                                                    <b>范围</b>: {item.range[0] + " - " + item.range[1]}
+                                                </div>
+                                            </div>
+                                        );
+                                    }): "暂无已完成的打标任务"
+                                    }
+                                </div>
                             </div>
                         </div>
-                        {/* <div className={styles.}></div> */}
                     </div>
-                </div>
-            </main>
+                </main>
+            )}
             <footer className={styles.footer}>GDTA@inlab</footer>
             <div
                 className={styles.imgShower}
@@ -1057,13 +1313,17 @@ export const Labeler = () => {
                                                     styles.dialog_conntent_info_data
                                                 }
                                                 style={{
-                                                    color: dialogCurrentData.valid < ValidType.Invalid
-                                                        ? "green"
-                                                        : "red",
+                                                    color:
+                                                        dialogCurrentData.valid <
+                                                        ValidType.Invalid
+                                                            ? "green"
+                                                            : "red",
                                                 }}
                                             >
                                                 {(() => {
-                                                    switch (dialogCurrentData.valid) {
+                                                    switch (
+                                                        dialogCurrentData.valid
+                                                    ) {
                                                         case ValidType.Valid:
                                                             return "有效";
                                                         case ValidType.ValidAfterProcessing:
