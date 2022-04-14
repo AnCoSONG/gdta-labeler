@@ -1219,7 +1219,7 @@ export const Labeler = () => {
                                                 </div>
                                             </div>
                                         );
-                                    }): "暂无已完成的打标任务"
+                                    }): <div style={{textAlign: 'left'}}>暂无已完成的打标任务</div>
                                     }
                                 </div>
                             </div>
