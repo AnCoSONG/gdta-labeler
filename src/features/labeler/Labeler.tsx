@@ -72,16 +72,18 @@ export const Labeler = () => {
             const uid = localStorage.getItem("uid");
             axios
                 .get(`/labeler/${uid}`)
-                .then((res) => {
+                .then(async (res) => {
                     // console.log(res)
-                    dispatch(
+                    await dispatch(
                         setUserInfo({
                             username: res.data.data.username,
                             id: res.data.data._id,
                             avatar: res.data.data.avatar,
                             invitecode: res.data.data.invitecode,
+                            role: res.data.data.role,
                         })
                     );
+                    console.log(userState);
                     if (res.status === 200) {
                         if (res.data.auth.status === 1) {
                             console.log("Token Refreshed");
