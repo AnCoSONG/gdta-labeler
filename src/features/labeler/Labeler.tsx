@@ -83,7 +83,7 @@ export const Labeler = () => {
                             role: res.data.data.role,
                         })
                     );
-                    console.log(userState);
+                    // console.log(userState);
                     if (res.status === 200) {
                         if (res.data.auth.status === 1) {
                             console.log("Token Refreshed");
@@ -724,7 +724,14 @@ export const Labeler = () => {
 
     const done = useAppSelector((state) => state.labeler.done);
 
-    const [finishedTasks, setFinishedTasks] = useState<{_id: string, range: [number, number], progress: number, finished: boolean}[]>([]);
+    const [finishedTasks, setFinishedTasks] = useState<
+        {
+            _id: string;
+            range: [number, number];
+            progress: number;
+            finished: boolean;
+        }[]
+    >([]);
     useEffect(() => {
         if (done) {
             axios
@@ -743,7 +750,7 @@ export const Labeler = () => {
                     console.error(e);
                 });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [done]);
 
     // 申请
@@ -796,6 +803,9 @@ export const Labeler = () => {
                                     await dispatch(initUserState());
                                     navigate("/login");
                                     break;
+                                case "admin":
+                                    navigate("/admin");
+                                    break;
                                 default:
                                     break;
                             }
@@ -813,6 +823,11 @@ export const Labeler = () => {
                                 <Dropdown.Item>
                                     用户名: {userState.username}
                                 </Dropdown.Item>
+                                {userState.role === "admin" && (
+                                    <Dropdown.Item command="admin">
+                                        管理面板
+                                    </Dropdown.Item>
+                                )}
                                 {currentTaskImgCount != null && (
                                     <>
                                         <Dropdown.Item divided>
@@ -824,8 +839,8 @@ export const Labeler = () => {
                                         </Dropdown.Item>
                                         <Dropdown.Item>
                                             当前任务还有{" "}
-                                            {currentTaskToBeLabeledCount}
-                                            张 待标注
+                                            {currentTaskToBeLabeledCount}张
+                                            待标注
                                         </Dropdown.Item>
                                     </>
                                 )}
@@ -1089,7 +1104,9 @@ export const Labeler = () => {
                             <div
                                 className={styles.main_done_wrapper_title_desc}
                             >
-                                {finishedTasks.length > 0? `您已完成${finishedTasks.length}项任务`: "您暂无打标任务"}
+                                {finishedTasks.length > 0
+                                    ? `您已完成${finishedTasks.length}项任务`
+                                    : "您暂无打标任务"}
                             </div>
                         </div>
                         <div className={styles.main_done_wrapper_content}>
@@ -1197,32 +1214,44 @@ export const Labeler = () => {
                                         styles.main_done_wrapper_content_column_scrollview
                                     }
                                 >
-                                    {finishedTasks.length > 0 ? finishedTasks.map((item) => {
-                                        return (
-                                            <div
-                                                key={item._id}
-                                                className={
-                                                    styles.main_done_wrapper_content_item2
-                                                }
-                                            >
+                                    {finishedTasks.length > 0 ? (
+                                        finishedTasks.map((item) => {
+                                            return (
                                                 <div
+                                                    key={item._id}
                                                     className={
-                                                        styles.main_done_wrapper_content_item2_text
+                                                        styles.main_done_wrapper_content_item2
                                                     }
                                                 >
-                                                    <b>打标任务 ID</b>: {item._id.split('').slice(16, 24).join('')}
+                                                    <div
+                                                        className={
+                                                            styles.main_done_wrapper_content_item2_text
+                                                        }
+                                                    >
+                                                        <b>打标任务 ID</b>:{" "}
+                                                        {item._id
+                                                            .split("")
+                                                            .slice(16, 24)
+                                                            .join("")}
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            styles.main_done_wrapper_content_item2_text
+                                                        }
+                                                    >
+                                                        <b>范围</b>:{" "}
+                                                        {item.range[0] +
+                                                            " - " +
+                                                            item.range[1]}
+                                                    </div>
                                                 </div>
-                                                <div
-                                                    className={
-                                                        styles.main_done_wrapper_content_item2_text
-                                                    }
-                                                >
-                                                    <b>范围</b>: {item.range[0] + " - " + item.range[1]}
-                                                </div>
-                                            </div>
-                                        );
-                                    }): <div style={{textAlign: 'left'}}>暂无已完成的打标任务</div>
-                                    }
+                                            );
+                                        })
+                                    ) : (
+                                        <div style={{ textAlign: "left" }}>
+                                            暂无已完成的打标任务
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

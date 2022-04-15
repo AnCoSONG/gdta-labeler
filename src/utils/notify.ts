@@ -1,4 +1,4 @@
-import { Message } from "element-react";
+import { Notification, Message } from "element-react";
 import { MessageBox } from "element-react";
 
 export const error = (msg: string, duration = 1000) => {
@@ -8,6 +8,15 @@ export const error = (msg: string, duration = 1000) => {
         duration,
     });
 };
+
+export const notification = (title: string, msg: string, duration = 1000, type: 'success' | 'info' | 'warning' | 'error') => {
+    Notification({
+        title: title,
+        message: msg,
+        type: type,
+        duration,
+    });
+}
 
 export const warn = (msg: string, duration = 1000) => {
     Message.warning({
