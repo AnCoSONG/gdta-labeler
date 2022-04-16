@@ -61,6 +61,7 @@ export const Labeler = () => {
     // 登录态验证 =========================
     // 检测本地是否有token，无则一定重定向到登录页
     useEffect(() => {
+        console.log('登录态验证')
         const token = localStorage.getItem("token");
         if (token === null) {
             console.log("Labeler: token is not found");
@@ -69,7 +70,7 @@ export const Labeler = () => {
             navigate("/login");
         } else {
             // 如果有token 通过请求后端接口检测token是否过期，没过期则刷新token
-            const uid = localStorage.getItem("uid");
+            const uid = localStorage.getItem("uid")!;
             axios
                 .get(`/labeler/${uid}`)
                 .then(async (res) => {
@@ -85,15 +86,20 @@ export const Labeler = () => {
                     );
                     // console.log(userState);
                     if (res.status === 200) {
+                        // console.log('登录态验证完成', userState.id, localStorage.getItem("uid"));
+                        // state无法立即生效，估计是在下个tick更新
                         if (res.data.auth.status === 1) {
                             console.log("Token Refreshed");
                             success(
                                 res.data.data.username +
                                     ", 欢迎回来(令牌已刷新)."
                             );
+                            // 加载图像
+                            dispatch(fetchImageDataAsync(uid));
                         } else if (res.data.auth.status === 0) {
                             console.log("Labeler: token is valid");
                             success(res.data.data.username + ", 欢迎回来");
+                            dispatch(fetchImageDataAsync(uid));
                         } else {
                             console.log("Labeler: token is invalid");
                             localStorage.removeItem("token");
@@ -309,15 +315,17 @@ export const Labeler = () => {
     // 支持纵向滚动（因为flex：1导致无法滚动） ======================================
 
     // 获取一张打标图像 =============================
-    useEffect(() => {
-        if (userState.id !== "") {
-            console.log("登录后首次取数据");
-            // 当用户状态已经获取时取数据
-            dispatch(fetchImageDataAsync(userState.id));
-        } else {
-            console.log("UserState 处在初始状态");
-        }
-    }, [dispatch, userState]);
+    // useEffect(() => {
+    //     console.log('获取打标图像', userState.id, localStorage.getItem('uid'));
+    //     if (userState.id === localStorage.getItem('uid')) {
+    //         console.log("登录后首次取数据");
+    //         // 当用户状态已经获取时取数据
+    //         // console.log(userState.id, localStorage.getItem('uid'))
+    //         dispatch(fetchImageDataAsync(userState.id));
+    //     } else {
+    //         console.log("UserState 处在初始状态");
+    //     }
+    // }, [userState]);
 
     // useEffect(() => {
     //     if (labelImage._id !== "") {

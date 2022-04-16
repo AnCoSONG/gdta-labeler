@@ -1,6 +1,7 @@
 .admin_wrapper {
     width: 100%;
-    height: auto;
+    height: 100%;
+    overflow-y: auto;
     position: relative;
     .admin_wrapper_content {
         position: relative;
@@ -49,13 +50,30 @@
                 justify-content: flex-start;
                 align-items: flex-start;
 
+                .admin_wrapper_content_main_item_global_progress {
+                    width: 100%;
+                    height: auto;
+                    position: relative;
+
+                    text-align: left;
+
+                    .admin_wrapper_content_main_item_global_progress_title {
+                        font-size: 1.2rem;
+                        // font-weight: bold;
+                        margin-top: 10px;
+                        color: #191919;
+                        margin-bottom: 10px;
+                    }
+                }
+
                 .admin_warpper_content_main_item_controls {
+                    margin-top: 15px;
                     display: flex;
                     width: 100%;
                     flex-flow: row wrap;
                     justify-content: flex-start;
                     align-items: center;
-                    margin-bottom: 15px;
+                    // margin-bottom: 15px;
                 }
 
                 .admin_wrapper_content_main_item_title {
@@ -72,7 +90,7 @@
                         height: 1px;
                         background-color: #e6e6e6;
                         margin-top: 10px;
-                        margin-bottom: 15px;
+                        // margin-bottom: 15px;
                     }
                 }
 
@@ -84,6 +102,7 @@
                     align-items: center;
 
                     .admin_wrapper_content_main_card {
+                        margin-top: 15px;
                         position: relative;
                         // width: 200px;
                         // width: 200px;
@@ -150,6 +169,7 @@
 
                     .admin_wrapper_content_main_task {
                         position: relative;
+                        margin-top: 15px;
                         // width: 200px;
                         // width: 200px;
                         width: 100%;

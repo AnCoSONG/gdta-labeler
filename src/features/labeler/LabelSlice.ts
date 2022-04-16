@@ -20,7 +20,7 @@ export const contents = [
     "以摄影或拟真的图像作为设计的主要元素，传达出具象、真实的观感。",
     "画面以字体以及字体排版为主要设计元素的风格",
     "不属于以上7个风格",
-]
+];
 export const genderMapping = "男性,女性".split(",");
 export const agesMapping = "青少年,青年,壮年,中年,老年".split(",");
 
@@ -111,24 +111,21 @@ export const initState: LabelSliceType = {
     },
     editing: false,
     labelImageLoaded: false,
-    done: false
+    done: false,
 };
 
 export const fetchImageDataAsync = createAsyncThunk(
     "labeler/fetchImageData",
     async (labeler_id: string) => {
         // 拿取图片之前先把localStorage清空
-        console.log("正在获取新的待打标图像");
+        console.log("正在获取新的待打标图像", labeler_id);
         let response = await axios.get("/task/next", {
             params: { labeler_id: labeler_id },
         });
         console.log("fetchImageData", response);
         if (response.status === 200) {
             if (response.data.message === "all done") {
-                success(
-                    "您已打标完成当前全部打标内容！",
-                    2000
-                );
+                success("您已打标完成当前全部打标内容！", 2000);
                 // all done image
                 return {
                     _id: "Thanks",
@@ -286,7 +283,7 @@ export const labelSlice = createSlice({
             state.editing = false;
             state.labelData = { ...initState.labelData };
             state.labelImage = { ...initState.labelImage };
-            console.log("inited", state);
+            // console.log("inited", state);
         },
         setLabelImageLoadedStatus: (state, action: PayloadAction<boolean>) => {
             state.labelImageLoaded = action.payload;
@@ -303,15 +300,16 @@ export const labelSlice = createSlice({
             .addCase(
                 fetchImageDataAsync.fulfilled,
                 (state, action: PayloadAction<LabelImage>) => {
-                    if (action.payload._id === "Thanks") {
-                        console.log("Thanks payload,", action.payload);
-                        state.done = true;
-                    }
                     console.log(action.payload);
                     state.labelImage = { ...action.payload };
                     // 拿到新图像就把edit模式关掉
                     state.editing = false;
+                    state.done = false;
                     // state.labelImageLoaded = true;
+                    if (action.payload._id === "Thanks") {
+                        console.log("Thanks payload,", action.payload);
+                        state.done = true;
+                    }
                 }
             )
             .addCase(fetchHistoryAsync.pending, (state) => {})
@@ -332,6 +330,7 @@ export const labelSlice = createSlice({
                 (state, action: PayloadAction<LabelImage>) => {
                     console.log("fetchLabelImageWithID", action.payload);
                     state.labelImage = { ...action.payload };
+                    state.done = false;
                     // state.labelImageLoaded = true;
                 }
             );

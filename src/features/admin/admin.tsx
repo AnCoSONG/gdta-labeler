@@ -1,18 +1,38 @@
 import {
     faAsterisk,
+    faBackward,
+    faBackwardStep,
+    faCode,
+    faHomeAlt,
     faIdBadge,
     faIdCardAlt,
+    faLeftLong,
     faLifeRing,
     faUserAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Button, Dialog, Form, Input, Progress, Select } from "element-react";
-import React, { useEffect, useState } from "react";
+import {
+    Button,
+    Dialog,
+    Form,
+    Icon,
+    Input,
+    InputNumber,
+    Progress,
+    Select,
+} from "element-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { error, messageAlert } from "../../utils/notify";
+import { axios, checkChar, cryptolize } from "../../utils";
+import {
+    error,
+    messageAlert,
+    messageConfirm,
+    notification,
+} from "../../utils/notify";
 import styles from "./admin.module.scss";
-import { fetchTasks, fetchUsers } from "./adminSlice";
+import { fetchGlobalProgress, fetchTasks, fetchUsers } from "./adminSlice";
 
 export const Admin = () => {
     const userState = useAppSelector((state) => state.user);
@@ -30,7 +50,8 @@ export const Admin = () => {
         // 拿数据
         dispatch(fetchTasks());
         dispatch(fetchUsers());
-    }, []);
+        dispatch(fetchGlobalProgress());
+    }, [userState.role, dispatch, navigate]);
 
     // 添加用户的dialog =========================================================
     const [addUserDialogVisible, setAddUserDialogVisible] = useState(false);
@@ -42,11 +63,182 @@ export const Admin = () => {
         role: "labeler",
     });
 
+    const addUser = async () => {
+        if (
+            addUserDialogUser.username !== "" &&
+            addUserDialogUser.password !== "" &&
+            addUserDialogUser.invitecode !== ""
+        ) {
+            setAddUserDialogLoading(true);
+            const res = await axios
+                .post("/labeler", {
+                    username: addUserDialogUser.username,
+                    password: cryptolize(addUserDialogUser.password),
+                    invitecode: addUserDialogUser.invitecode,
+                    role: addUserDialogUser.role,
+                    avatar: `https://avatars.dicebear.com/api/avataaars/${addUserDialogUser.username}.svg`,
+                })
+                .catch((err) => {
+                    setAddUserDialogLoading(false);
+                    error(err);
+                });
+            if (res) {
+                if (res.status === 201 || res.status === 200) {
+                    notification("成功", "已添加", 2000, "success");
+                    await dispatch(fetchUsers());
+                    setAddUserDialogLoading(false);
+                    setAddUserDialogVisible(false);
+                } else {
+                    setAddUserDialogLoading(false);
+                    error("" + res.status);
+                }
+            }
+        } else {
+            error("请填写完整信息");
+            return;
+        }
+    };
+
+    const [passwordVisible, setPasswordVisible] = useState(false);
+
     // 添加用户的dialog =========================================================
+
+    // 删除用户 =========================================================
+    const deleteUser = (id: string, username: string) => {
+        messageConfirm("警告", `确认删除${username}吗？`, "warning")
+            .then(() => {
+                axios
+                    .delete(`/labeler/${id}`)
+                    .then((res) => {
+                        if (res.status === 200) {
+                            notification("成功", "已删除", 2000, "success");
+                            dispatch(fetchUsers());
+                        } else {
+                            error("" + res.status);
+                        }
+                    })
+                    .catch((err) => {
+                        error(err);
+                    });
+            })
+            .catch(() => {
+                console.log("cancel");
+            });
+    };
+
+    // 删除用户 =========================================================
+
+    // 添加任务 =========================================================
+    const [addTaskDialogVisible, setAddTaskDialogVisible] = useState(false);
+    const [addTaskDialogLoading, setAddTaskDialogLoading] = useState(false);
+    const [addTaskDialogTask, setAddTaskDialogTask] = useState({
+        start: 0,
+        count: 100,
+        labeler_id: "",
+    });
+
+    const addTask = () => {
+        if (
+            /^[0-9]+$/.test(addTaskDialogTask.start + "") &&
+            addTaskDialogTask.count !== 0 &&
+            addTaskDialogTask.labeler_id !== ""
+        ) {
+            console.log('adding task', addTaskDialogTask)
+            setAddTaskDialogLoading(true);
+            axios
+                .post("/task", {
+                    range: [
+                        addTaskDialogTask.start,
+                        addTaskDialogTask.start + addTaskDialogTask.count,
+                    ],
+                    labeler_id: addTaskDialogTask.labeler_id,
+                    progress: 0,
+                    finished: false,
+                })
+                .then(async (res) => {
+                    if (res.status === 201 || res.status === 200) {
+                        notification("成功", "已添加", 2000, "success");
+                        await dispatch(fetchTasks());
+                        await dispatch(fetchGlobalProgress());
+                        setAddTaskDialogLoading(false);
+                        setAddTaskDialogVisible(false);
+                        setAddTaskDialogTask({
+                            start: 0,
+                            count: 100,
+                            labeler_id: "",
+                        });
+                    } else {
+                        setAddTaskDialogLoading(false);
+                        error("" + res.status);
+                    }
+                })
+                .catch((err) => {
+                    setAddTaskDialogLoading(false);
+                    error(err);
+                });
+        } else {
+            console.log(addTaskDialogTask);
+            error("请填写完整信息");
+            return;
+        }
+    };
+    // 添加任务 =========================================================
+
+    // 删除任务 =========================================================
+    const deleteTask = (task_id: string) => {
+        messageConfirm("警告", `确认删除吗？`, "warning")
+            .then(() => {
+                axios
+                    .delete(`/task/${task_id}`)
+                    .then((res) => {
+                        if (res.status === 200 || res.status === 201) {
+                            notification("成功", "已删除", 2000, "success");
+                            dispatch(fetchTasks());
+                            dispatch(fetchGlobalProgress());
+                        } else {
+                            error("" + res.status);
+                        }
+                    })
+                    .catch((err) => {
+                        error(err);
+                    });
+            })
+            .catch(() => {
+                console.log("cancel");
+            });
+    };
+    // 删除任务 =========================================================
+
+    // 全局进度条
+    const globalProgress = useAppSelector(
+        (state) => state.admin.globalProgress
+    );
+    const imgCount = useAppSelector((state) => state.admin.imgCount);
+
+    const globalProgressText = useMemo(() => {
+        if (imgCount === 0) {
+            return 0;
+        } else {
+            return Math.round((globalProgress / imgCount) * 100);
+        }
+    }, [globalProgress, imgCount]);
+
     return (
         <div className={styles.admin_wrapper}>
             <div className={styles.admin_wrapper_content}>
                 <header className={styles.admin_wrapper_content_header}>
+                    <div
+                        style={{
+                            fontSize: "2rem",
+                            color: "#aaa",
+                            cursor: "pointer",
+                        }}
+                        onClick={(e) => {
+                            navigate("/");
+                        }}
+                    >
+                        <FontAwesomeIcon icon={faHomeAlt}></FontAwesomeIcon>
+                    </div>
                     <div className={styles.admin_wrapper_content_header_title}>
                         管理员页面 (WIP)
                     </div>
@@ -86,6 +278,7 @@ export const Admin = () => {
                                               className={
                                                   styles.admin_wrapper_content_main_card
                                               }
+                                              key={labeler._id}
                                           >
                                               <div
                                                   className={
@@ -130,6 +323,18 @@ export const Admin = () => {
                                                   >
                                                       {" "}
                                                       <FontAwesomeIcon
+                                                          icon={faCode}
+                                                      ></FontAwesomeIcon>
+                                                      &nbsp;&nbsp;
+                                                      {labeler.invitecode}
+                                                  </div>
+                                                  <div
+                                                      className={
+                                                          styles.admin_wrapper_content_main_card_text
+                                                      }
+                                                  >
+                                                      {" "}
+                                                      <FontAwesomeIcon
                                                           icon={faUserAlt}
                                                       ></FontAwesomeIcon>
                                                       &nbsp;&nbsp;{labeler.role}
@@ -143,21 +348,21 @@ export const Admin = () => {
                                                           className={
                                                               styles.admin_wrapper_content_main_card_btn
                                                           }
-                                                          type="danger"
+                                                          type="text"
                                                           disabled={
                                                               labeler.role ===
                                                               "admin"
                                                           }
                                                           onClick={(e) =>
-                                                              messageAlert(
-                                                                  "暂不支持",
-                                                                  "警告"
+                                                              deleteUser(
+                                                                  labeler._id,
+                                                                  labeler.username
                                                               )
                                                           }
                                                       >
                                                           删除
                                                       </Button>
-                                                      <Button
+                                                      {/* <Button
                                                           className={
                                                               styles.admin_wrapper_content_main_card_btn
                                                           }
@@ -170,7 +375,7 @@ export const Admin = () => {
                                                           }
                                                       >
                                                           编辑
-                                                      </Button>
+                                                      </Button> */}
                                                   </div>
                                               </div>
                                           </div>
@@ -190,10 +395,33 @@ export const Admin = () => {
                         </div>
                         <div
                             className={
+                                styles.admin_wrapper_content_main_item_global_progress
+                            }
+                        >
+                            <div
+                                className={
+                                    styles.admin_wrapper_content_main_item_global_progress_title
+                                }
+                            >
+                                已分配进度: {globalProgress} / {imgCount}
+                            </div>
+                            <Progress
+                                strokeWidth={24}
+                                percentage={globalProgressText}
+                                textInside
+                            ></Progress>
+                        </div>
+                        <div
+                            className={
                                 styles.admin_warpper_content_main_item_controls
                             }
                         >
-                            <Button type="primary">添加任务</Button>
+                            <Button
+                                type="primary"
+                                onClick={() => setAddTaskDialogVisible(true)}
+                            >
+                                添加任务
+                            </Button>
                         </div>
                         <div
                             className={styles.admin_wrapper_content_main_tasks}
@@ -205,6 +433,7 @@ export const Admin = () => {
                                               className={
                                                   styles.admin_wrapper_content_main_task
                                               }
+                                              key={task._id}
                                           >
                                               <div
                                                   className={
@@ -307,6 +536,22 @@ export const Admin = () => {
                                                           />
                                                       )}
                                                   </div>
+                                                  <div
+                                                      className={
+                                                          styles.admin_wrapper_content_main_task_line
+                                                      }
+                                                  >
+                                                      <Button
+                                                          type="text"
+                                                          onClick={(e) =>
+                                                              deleteTask(
+                                                                  task._id
+                                                              )
+                                                          }
+                                                      >
+                                                          删除
+                                                      </Button>
+                                                  </div>
                                               </div>
                                           </div>
                                       );
@@ -330,12 +575,81 @@ export const Admin = () => {
                         model={addUserDialogUser}
                         labelWidth="80"
                         labelPosition="left"
+                        rules={{
+                            username: [
+                                {
+                                    required: true,
+                                    message: "请输入用户名",
+                                    trigger: "blur",
+                                },
+                                {
+                                    //@ts-ignore
+                                    validator: (rule, value, callback) => {
+                                        if (!/^[a-zA-Z0-9]+$/.test(value)) {
+                                            callback("用户名必须为字母或数字");
+                                        }
+                                        if (
+                                            labelers
+                                                .map(
+                                                    (labeler) =>
+                                                        labeler.username
+                                                )
+                                                .indexOf(value) !== -1
+                                        ) {
+                                            callback("用户名已存在");
+                                        }
+                                        callback();
+                                    },
+                                },
+                            ],
+                            password: [
+                                {
+                                    required: true,
+                                    message: "请输入密码",
+                                    trigger: "blur",
+                                },
+                                {
+                                    //@ts-ignore
+                                    validator: (rule, value, callback) => {
+                                        if (!checkChar(value)) {
+                                            callback("密码必须为纯字母");
+                                        }
+                                        callback();
+                                    },
+                                },
+                            ],
+                            invitecode: [
+                                {
+                                    required: true,
+                                    message: "请输入邀请码",
+                                    trigger: "blur",
+                                },
+                                {
+                                    //@ts-ignore
+                                    validator: (rule, value, callback) => {
+                                        if (!/^[0-9]+$/.test(value)) {
+                                            callback(
+                                                "邀请码必须为纯字母或数字"
+                                            );
+                                        }
+                                        callback();
+                                    },
+                                },
+                            ],
+                            role: [
+                                {
+                                    required: true,
+                                    message: "请选择角色",
+                                    trigger: "blur",
+                                },
+                            ],
+                        }}
                     >
                         <Form.Item label="用户名" prop="username">
                             <Input
                                 value={addUserDialogUser.username}
                                 onChange={(e) => {
-                                    console.log(e);
+                                    // console.log(e);
                                     setAddUserDialogUser({
                                         ...addUserDialogUser,
                                         // @ts-ignore
@@ -346,10 +660,14 @@ export const Admin = () => {
                         </Form.Item>
                         <Form.Item label="密码" prop="password">
                             <Input
-                                type="password"
+                                type={passwordVisible ? "text" : "password"}
+                                onIconClick={() => {
+                                    setPasswordVisible(!passwordVisible);
+                                }}
+                                icon={passwordVisible ? "star-on" : "star-off"}
                                 value={addUserDialogUser.password}
                                 onChange={(e) => {
-                                    console.log(e);
+                                    // console.log(e);
                                     setAddUserDialogUser({
                                         ...addUserDialogUser,
                                         // @ts-ignore
@@ -373,9 +691,10 @@ export const Admin = () => {
                         </Form.Item>
                         <Form.Item label="身份" prop="role">
                             <Select
+                                style={{ width: "100%" }}
                                 value={addUserDialogUser.role}
                                 onChange={(e) => {
-                                    console.log(e);
+                                    // console.log(e);
                                     setAddUserDialogUser({
                                         ...addUserDialogUser,
                                         // @ts-ignore
@@ -393,6 +712,140 @@ export const Admin = () => {
                         </Form.Item>
                     </Form>
                 </Dialog.Body>
+                <Dialog.Footer>
+                    <Button
+                        type="primary"
+                        onClick={() => setAddUserDialogVisible(false)}
+                    >
+                        取消
+                    </Button>
+                    <Button
+                        type="primary"
+                        onClick={() => addUser()}
+                        loading={addUserDialogLoading}
+                    >
+                        确定
+                    </Button>
+                </Dialog.Footer>
+            </Dialog>
+            <Dialog
+                visible={addTaskDialogVisible}
+                title="添加任务"
+                size="small"
+                onCancel={() => {
+                    setAddTaskDialogVisible(false);
+                }}
+                closeOnClickModal={false}
+            >
+                <Dialog.Body>
+                    <Form
+                        model={addTaskDialogTask}
+                        labelWidth="80"
+                        labelPosition="left"
+                        rules={{
+                            start: [
+                                {
+                                    required: true,
+                                    message: "需设定任务起点",
+                                    trigger: "blur",
+                                    type: "number",
+                                },
+                            ],
+                            count: [
+                                {
+                                    required: true,
+                                    message: "需设定任务数量",
+                                    trigger: "blur",
+                                    type: "number",
+                                },
+                            ],
+                            labeler_id: [
+                                {
+                                    required: true,
+                                    message: "需确定打标人",
+                                    trigger: "blur",
+                                    type: "string"
+                                },
+                            ],
+                        }}
+                    >
+                        <Form.Item label="起点" prop="start">
+                            <InputNumber
+                                style={{ width: "100%" }}
+                                defaultValue={addTaskDialogTask.start}
+                                value={addTaskDialogTask.start}
+                                min={0}
+                                step={100}
+                                onChange={(e) => {
+                                    console.log(addTaskDialogTask);
+                                    if (e) {
+                                        setAddTaskDialogTask({
+                                            ...addTaskDialogTask,
+                                            start: e,
+                                        });
+                                    }
+                                }}
+                            />
+                        </Form.Item>
+                        <Form.Item label="标注数量" prop="count">
+                            <InputNumber
+                                defaultValue={addTaskDialogTask.count}
+                                style={{ width: "100%" }}
+                                value={addTaskDialogTask.count}
+                                min={100}
+                                step={100}
+                                onChange={(e) => {
+                                    console.log(addTaskDialogTask);
+                                    if (e) {
+                                        setAddTaskDialogTask({
+                                            ...addTaskDialogTask,
+                                            count: e,
+                                        });
+                                    }
+                                }}
+                            />
+                        </Form.Item>
+                        <Form.Item label="标注人" prop="labeler_id">
+                            <Select
+                                style={{ width: "100%" }}
+                                value={addTaskDialogTask.labeler_id}
+                                onChange={(e) => {
+                                    console.log(addTaskDialogTask);
+                                    setAddTaskDialogTask({
+                                        ...addTaskDialogTask,
+                                        labeler_id: e,
+                                    });
+                                }}
+                            >
+                                {labelers.map((labeler) => {
+                                    return (
+                                        <Select.Option
+                                            value={labeler._id}
+                                            key={labeler._id}
+                                        >
+                                            {labeler.username}
+                                        </Select.Option>
+                                    );
+                                })}
+                            </Select>
+                        </Form.Item>
+                    </Form>
+                </Dialog.Body>
+                <Dialog.Footer>
+                    <Button
+                        type="primary"
+                        onClick={(e) => setAddTaskDialogVisible(false)}
+                    >
+                        取消
+                    </Button>
+                    <Button
+                        type="primary"
+                        onClick={(e) => addTask()}
+                        loading={addTaskDialogLoading}
+                    >
+                        确定
+                    </Button>
+                </Dialog.Footer>
             </Dialog>
         </div>
     );

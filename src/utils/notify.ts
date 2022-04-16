@@ -38,7 +38,7 @@ export const alert = (title: string, msg: string) => {
     return MessageBox.alert(msg, title);
 };
 
-export const confirm = (
+export const messageConfirm = (
     title: string,
     msg: string,
     type: "success" | "error" | "info" | "warning"

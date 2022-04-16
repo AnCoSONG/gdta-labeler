@@ -26,3 +26,11 @@ export const cryptolize = (str: string) => {
     // console.log(crypto.SHA256(str).toString())
     return crypto.SHA256(str).toString()
 }
+
+export const range = (start: number, end:number, gap:number) => {
+    const result = [];
+    for (let i = start; i <= end; i+=gap) {
+        result.push(i);
+    }
+    return result;
+}
