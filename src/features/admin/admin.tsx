@@ -1,12 +1,9 @@
 import {
     faAsterisk,
-    faBackward,
-    faBackwardStep,
     faCode,
     faHomeAlt,
     faIdBadge,
     faIdCardAlt,
-    faLeftLong,
     faLifeRing,
     faUserAlt,
 } from "@fortawesome/free-solid-svg-icons";
@@ -15,7 +12,6 @@ import {
     Button,
     Dialog,
     Form,
-    Icon,
     Input,
     InputNumber,
     Progress,
@@ -27,7 +23,6 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { axios, checkChar, cryptolize } from "../../utils";
 import {
     error,
-    messageAlert,
     messageConfirm,
     notification,
 } from "../../utils/notify";
