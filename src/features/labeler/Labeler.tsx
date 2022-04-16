@@ -61,6 +61,7 @@ export const Labeler = () => {
     // 登录态验证 =========================
     // 检测本地是否有token，无则一定重定向到登录页
     useEffect(() => {
+        console.log('登录态验证')
         const token = localStorage.getItem("token");
         if (token === null) {
             console.log("Labeler: token is not found");
@@ -69,29 +70,36 @@ export const Labeler = () => {
             navigate("/login");
         } else {
             // 如果有token 通过请求后端接口检测token是否过期，没过期则刷新token
-            const uid = localStorage.getItem("uid");
+            const uid = localStorage.getItem("uid")!;
             axios
                 .get(`/labeler/${uid}`)
-                .then((res) => {
+                .then(async (res) => {
                     // console.log(res)
-                    dispatch(
+                    await dispatch(
                         setUserInfo({
                             username: res.data.data.username,
                             id: res.data.data._id,
                             avatar: res.data.data.avatar,
                             invitecode: res.data.data.invitecode,
+                            role: res.data.data.role,
                         })
                     );
+                    // console.log(userState);
                     if (res.status === 200) {
+                        // console.log('登录态验证完成', userState.id, localStorage.getItem("uid"));
+                        // state无法立即生效，估计是在下个tick更新
                         if (res.data.auth.status === 1) {
                             console.log("Token Refreshed");
                             success(
                                 res.data.data.username +
                                     ", 欢迎回来(令牌已刷新)."
                             );
+                            // 加载图像
+                            dispatch(fetchImageDataAsync(uid));
                         } else if (res.data.auth.status === 0) {
                             console.log("Labeler: token is valid");
                             success(res.data.data.username + ", 欢迎回来");
+                            dispatch(fetchImageDataAsync(uid));
                         } else {
                             console.log("Labeler: token is invalid");
                             localStorage.removeItem("token");
@@ -307,15 +315,17 @@ export const Labeler = () => {
     // 支持纵向滚动（因为flex：1导致无法滚动） ======================================
 
     // 获取一张打标图像 =============================
-    useEffect(() => {
-        if (userState.id !== "") {
-            console.log("登录后首次取数据");
-            // 当用户状态已经获取时取数据
-            dispatch(fetchImageDataAsync(userState.id));
-        } else {
-            console.log("UserState 处在初始状态");
-        }
-    }, [dispatch, userState]);
+    // useEffect(() => {
+    //     console.log('获取打标图像', userState.id, localStorage.getItem('uid'));
+    //     if (userState.id === localStorage.getItem('uid')) {
+    //         console.log("登录后首次取数据");
+    //         // 当用户状态已经获取时取数据
+    //         // console.log(userState.id, localStorage.getItem('uid'))
+    //         dispatch(fetchImageDataAsync(userState.id));
+    //     } else {
+    //         console.log("UserState 处在初始状态");
+    //     }
+    // }, [userState]);
 
     // useEffect(() => {
     //     if (labelImage._id !== "") {
@@ -722,7 +732,14 @@ export const Labeler = () => {
 
     const done = useAppSelector((state) => state.labeler.done);
 
-    const [finishedTasks, setFinishedTasks] = useState<{_id: string, range: [number, number], progress: number, finished: boolean}[]>([]);
+    const [finishedTasks, setFinishedTasks] = useState<
+        {
+            _id: string;
+            range: [number, number];
+            progress: number;
+            finished: boolean;
+        }[]
+    >([]);
     useEffect(() => {
         if (done) {
             axios
@@ -741,7 +758,7 @@ export const Labeler = () => {
                     console.error(e);
                 });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [done]);
 
     // 申请
@@ -794,6 +811,9 @@ export const Labeler = () => {
                                     await dispatch(initUserState());
                                     navigate("/login");
                                     break;
+                                case "admin":
+                                    navigate("/admin");
+                                    break;
                                 default:
                                     break;
                             }
@@ -811,6 +831,11 @@ export const Labeler = () => {
                                 <Dropdown.Item>
                                     用户名: {userState.username}
                                 </Dropdown.Item>
+                                {userState.role === "admin" && (
+                                    <Dropdown.Item command="admin">
+                                        管理面板
+                                    </Dropdown.Item>
+                                )}
                                 {currentTaskImgCount != null && (
                                     <>
                                         <Dropdown.Item divided>
@@ -822,8 +847,8 @@ export const Labeler = () => {
                                         </Dropdown.Item>
                                         <Dropdown.Item>
                                             当前任务还有{" "}
-                                            {currentTaskToBeLabeledCount}
-                                            张 待标注
+                                            {currentTaskToBeLabeledCount}张
+                                            待标注
                                         </Dropdown.Item>
                                     </>
                                 )}
@@ -1087,7 +1112,9 @@ export const Labeler = () => {
                             <div
                                 className={styles.main_done_wrapper_title_desc}
                             >
-                                {finishedTasks.length > 0? `您已完成${finishedTasks.length}项任务`: "您暂无打标任务"}
+                                {finishedTasks.length > 0
+                                    ? `您已完成${finishedTasks.length}项任务`
+                                    : "您暂无打标任务"}
                             </div>
                         </div>
                         <div className={styles.main_done_wrapper_content}>
@@ -1195,32 +1222,44 @@ export const Labeler = () => {
                                         styles.main_done_wrapper_content_column_scrollview
                                     }
                                 >
-                                    {finishedTasks.length > 0 ? finishedTasks.map((item) => {
-                                        return (
-                                            <div
-                                                key={item._id}
-                                                className={
-                                                    styles.main_done_wrapper_content_item2
-                                                }
-                                            >
+                                    {finishedTasks.length > 0 ? (
+                                        finishedTasks.map((item) => {
+                                            return (
                                                 <div
+                                                    key={item._id}
                                                     className={
-                                                        styles.main_done_wrapper_content_item2_text
+                                                        styles.main_done_wrapper_content_item2
                                                     }
                                                 >
-                                                    <b>打标任务 ID</b>: {item._id.split('').slice(16, 24).join('')}
+                                                    <div
+                                                        className={
+                                                            styles.main_done_wrapper_content_item2_text
+                                                        }
+                                                    >
+                                                        <b>打标任务 ID</b>:{" "}
+                                                        {item._id
+                                                            .split("")
+                                                            .slice(16, 24)
+                                                            .join("")}
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            styles.main_done_wrapper_content_item2_text
+                                                        }
+                                                    >
+                                                        <b>范围</b>:{" "}
+                                                        {item.range[0] +
+                                                            " - " +
+                                                            item.range[1]}
+                                                    </div>
                                                 </div>
-                                                <div
-                                                    className={
-                                                        styles.main_done_wrapper_content_item2_text
-                                                    }
-                                                >
-                                                    <b>范围</b>: {item.range[0] + " - " + item.range[1]}
-                                                </div>
-                                            </div>
-                                        );
-                                    }): <div style={{textAlign: 'left'}}>暂无已完成的打标任务</div>
-                                    }
+                                            );
+                                        })
+                                    ) : (
+                                        <div style={{ textAlign: "left" }}>
+                                            暂无已完成的打标任务
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
