@@ -23,7 +23,12 @@ import {
     faShare,
     faEdit,
 } from "@fortawesome/free-solid-svg-icons";
-import { error, messageAlert, success, warn } from "../../utils/notify";
+import {
+    error,
+    messageAlert,
+    success,
+    warn,
+} from "../../utils/notify";
 import { setUserInfo, initUserState } from "../user/userSlice";
 import {
     agesMapping,
@@ -61,7 +66,7 @@ export const Labeler = () => {
     // 登录态验证 =========================
     // 检测本地是否有token，无则一定重定向到登录页
     useEffect(() => {
-        console.log('登录态验证')
+        console.log("登录态验证");
         const token = localStorage.getItem("token");
         if (token === null) {
             console.log("Labeler: token is not found");
@@ -769,6 +774,11 @@ export const Labeler = () => {
         messageAlert("请联系工具人钉钉或微信申请", "提示");
     }
 
+    // 文档
+    const navigateTo = (url: string) => {
+        window.open(url, "_blank");
+    };
+
     return (
         <div className={styles.wrapper}>
             <nav className={styles.nav}>
@@ -795,8 +805,84 @@ export const Labeler = () => {
                             EDIT
                         </div>
                     </Popover>
-                    <div className={styles.btn}>DOC</div>
-                    <div className={styles.btn}>HELP</div>
+                    <Dropdown
+                        onCommand={(command) => {
+                            switch (command) {
+                                case "0":
+                                    navigateTo(
+                                        "https://ai-design.yuque.com/docs/share/48d867b0-246f-46ae-ab44-dc1e8fc2c00a#tCfuc"
+                                    );
+                                    break;
+                                case "1":
+                                    navigateTo(
+                                        "https://ai-design.yuque.com/docs/share/48d867b0-246f-46ae-ab44-dc1e8fc2c00a#PRJSc"
+                                    );
+                                    break;
+                                case "2":
+                                    navigateTo(
+                                        "https://ai-design.yuque.com/docs/share/48d867b0-246f-46ae-ab44-dc1e8fc2c00a#bahrq"
+                                    );
+                                    break;
+                                case "3":
+                                    navigateTo(
+                                        "https://ai-design.yuque.com/docs/share/48d867b0-246f-46ae-ab44-dc1e8fc2c00a#omA7s"
+                                    );
+                                    break;
+                                case "4":
+                                    navigateTo(
+                                        "https://ai-design.yuque.com/docs/share/48d867b0-246f-46ae-ab44-dc1e8fc2c00a#llon8"
+                                    );
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }}
+                        menu={
+                            <Dropdown.Menu
+                                style={{
+                                    width: "200px",
+                                    fontSize: "0.9rem",
+                                    fontWeight: "400",
+                                }}
+                            >
+                                <Dropdown.Item command="0">
+                                    界面与交互
+                                </Dropdown.Item>
+                                <Dropdown.Item command="1">
+                                    有效性判断
+                                </Dropdown.Item>
+                                <Dropdown.Item command="2">
+                                    风格标注
+                                </Dropdown.Item>
+                                <Dropdown.Item command="3">
+                                    受众年龄标注
+                                </Dropdown.Item>
+                                <Dropdown.Item command="4">
+                                    受众性别标注
+                                </Dropdown.Item>
+                            </Dropdown.Menu>
+                        }
+                    >
+                        <div
+                            className={styles.btn}
+                            onClick={() =>
+                                navigateTo(
+                                    "https://ai-design.yuque.com/docs/share/48d867b0-246f-46ae-ab44-dc1e8fc2c00a?#"
+                                )
+                            }
+                            style={{ color: "black" }}
+                        >
+                            Doc
+                        </div>
+                    </Dropdown>
+                    <div
+                        className={styles.btn}
+                        onClick={() => {
+                            messageAlert("暂不支持, 请私信工具人钉钉。如因图像标注问题, 私信时请提供图像的ID", "提示");
+                        }}
+                    >
+                        Feedback
+                    </div>
                     <Dropdown
                         onCommand={async (e) => {
                             switch (e) {
