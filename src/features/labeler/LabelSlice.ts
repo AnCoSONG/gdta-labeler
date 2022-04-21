@@ -3,7 +3,7 @@ import { axios } from "../../utils";
 import { success } from "../../utils/notify";
 
 export const stylesMapping =
-    "简约/简洁,科技/科幻,复古/古典,卡通/插画,复杂/装饰,写实/摄影,字体设计,其他".split(
+    "简约/简洁,科技/科幻,复古/古典,卡通/插画,复杂/装饰,写实/摄影,字体排印,其他".split(
         ","
     );
 export const i18nstyleMapping =
