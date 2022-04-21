@@ -23,12 +23,7 @@ import {
     faShare,
     faEdit,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-    error,
-    messageAlert,
-    success,
-    warn,
-} from "../../utils/notify";
+import { error, messageAlert, success, warn } from "../../utils/notify";
 import { setUserInfo, initUserState } from "../user/userSlice";
 import {
     agesMapping,
@@ -62,6 +57,16 @@ export const Labeler = () => {
     const userState = useAppSelector((state) => state.user);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+
+    const labelCardsWrapperRef = useRef<HTMLDivElement>(null);
+
+    const smoothScrollback = () => {
+        labelCardsWrapperRef.current!.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "smooth",
+        });
+    };
 
     // 登录态验证 =========================
     // 检测本地是否有token，无则一定重定向到登录页
@@ -100,11 +105,13 @@ export const Labeler = () => {
                                     ", 欢迎回来(令牌已刷新)."
                             );
                             // 加载图像
-                            dispatch(fetchImageDataAsync(uid));
+                            await dispatch(fetchImageDataAsync(uid));
+                            smoothScrollback();
                         } else if (res.data.auth.status === 0) {
                             console.log("Labeler: token is valid");
                             success(res.data.data.username + ", 欢迎回来");
                             dispatch(fetchImageDataAsync(uid));
+                            smoothScrollback();
                         } else {
                             console.log("Labeler: token is invalid");
                             localStorage.removeItem("token");
@@ -408,6 +415,7 @@ export const Labeler = () => {
                     console.log("上传成功，已清除currentImg");
                     await dispatch(fetchImageDataAsync(userState.id));
                     setConfirmBtnStatus("still");
+                    smoothScrollback();
                 } else {
                     error("上传失败 " + res.statusText);
                     setConfirmBtnStatus("still");
@@ -499,6 +507,7 @@ export const Labeler = () => {
                         // 获取下一张
                         await dispatch(fetchImageDataAsync(userState.id));
                         setSkipBtnStatus("still");
+                        smoothScrollback();
                     } else {
                         error("跳过失败 " + create_unfinished_res.statusText);
                         setConfirmBtnStatus("still");
@@ -878,7 +887,10 @@ export const Labeler = () => {
                     <div
                         className={styles.btn}
                         onClick={() => {
-                            messageAlert("暂不支持, 请私信工具人钉钉。如因图像标注问题, 私信时请提供图像的ID", "提示");
+                            messageAlert(
+                                "暂不支持, 请私信工具人钉钉。如因图像标注问题, 私信时请提供图像的ID",
+                                "提示"
+                            );
                         }}
                     >
                         Feedback
@@ -1127,6 +1139,7 @@ export const Labeler = () => {
                         <div className={styles.label_inner}>
                             <div
                                 className={styles.label_cards_wrapper}
+                                ref={labelCardsWrapperRef}
                                 // style={{ height: `${calcedHeight.current}px` }}
                             >
                                 <Q1 />
@@ -1383,149 +1396,144 @@ export const Labeler = () => {
                 }}
             >
                 <Dialog.Body>
-                    {dialogVisible && (
-                        // 图像, ID, valid, styles, gender, ages
-                        <div className={styles.dialog_content}>
-                            {!dialogCurrentData ? (
-                                <div className={styles.dialog_content_nodata}>
-                                    NOT AVAILABLE
+                    <div className={styles.dialog_content}>
+                        {!dialogCurrentData ? (
+                            <div className={styles.dialog_content_nodata}>
+                                NOT AVAILABLE
+                            </div>
+                        ) : (
+                            <>
+                                <div className={styles.dialog_content_cover}>
+                                    <img
+                                        src={dialogCurrentData.img_src}
+                                        alt={dialogCurrentData.img_title}
+                                    />
                                 </div>
-                            ) : (
-                                <>
+                                <div className={styles.dialog_content_info}>
                                     <div
-                                        className={styles.dialog_content_cover}
+                                        className={
+                                            styles.dialog_content_info_wrapper
+                                        }
                                     >
-                                        <img
-                                            src={dialogCurrentData.img_src}
-                                            alt={dialogCurrentData.img_title}
-                                        />
-                                    </div>
-                                    <div className={styles.dialog_content_info}>
                                         <div
                                             className={
-                                                styles.dialog_content_info_wrapper
+                                                styles.dialog_conntent_info_name
                                             }
                                         >
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_name
-                                                }
-                                            >
-                                                Image ID
-                                            </div>
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_data
-                                                }
-                                            >
-                                                {dialogCurrentData.img_id}
-                                            </div>
+                                            Image ID
                                         </div>
                                         <div
                                             className={
-                                                styles.dialog_content_info_wrapper
+                                                styles.dialog_conntent_info_data
                                             }
                                         >
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_name
-                                                }
-                                            >
-                                                是否有效
-                                            </div>
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_data
-                                                }
-                                                style={{
-                                                    color:
-                                                        dialogCurrentData.valid <
-                                                        ValidType.Invalid
-                                                            ? "green"
-                                                            : "red",
-                                                }}
-                                            >
-                                                {(() => {
-                                                    switch (
-                                                        dialogCurrentData.valid
-                                                    ) {
-                                                        case ValidType.Valid:
-                                                            return "有效";
-                                                        case ValidType.ValidAfterProcessing:
-                                                            return "处理后有效";
-                                                        case ValidType.Invalid:
-                                                            return "无效";
-                                                        default:
-                                                            return "未知";
-                                                    }
-                                                })()}
-                                            </div>
-                                        </div>
-                                        <div
-                                            className={
-                                                styles.dialog_content_info_wrapper
-                                            }
-                                        >
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_name
-                                                }
-                                            >
-                                                风格
-                                            </div>
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_data
-                                                }
-                                            >
-                                                {dialogStyles}
-                                            </div>
-                                        </div>
-                                        <div
-                                            className={
-                                                styles.dialog_content_info_wrapper
-                                            }
-                                        >
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_name
-                                                }
-                                            >
-                                                受众性别
-                                            </div>
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_data
-                                                }
-                                            >
-                                                {dialogGenders}
-                                            </div>
-                                        </div>
-                                        <div
-                                            className={
-                                                styles.dialog_content_info_wrapper
-                                            }
-                                        >
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_name
-                                                }
-                                            >
-                                                受众年龄
-                                            </div>
-                                            <div
-                                                className={
-                                                    styles.dialog_conntent_info_data
-                                                }
-                                            >
-                                                {dialogAges}
-                                            </div>
+                                            {dialogCurrentData.img_id}
                                         </div>
                                     </div>
-                                </>
-                            )}
-                        </div>
-                    )}
+                                    <div
+                                        className={
+                                            styles.dialog_content_info_wrapper
+                                        }
+                                    >
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_name
+                                            }
+                                        >
+                                            是否有效
+                                        </div>
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_data
+                                            }
+                                            style={{
+                                                color:
+                                                    dialogCurrentData.valid <
+                                                    ValidType.Invalid
+                                                        ? "green"
+                                                        : "red",
+                                            }}
+                                        >
+                                            {(() => {
+                                                switch (
+                                                    dialogCurrentData.valid
+                                                ) {
+                                                    case ValidType.Valid:
+                                                        return "有效";
+                                                    case ValidType.ValidAfterProcessing:
+                                                        return "处理后有效";
+                                                    case ValidType.Invalid:
+                                                        return "无效";
+                                                    default:
+                                                        return "未知";
+                                                }
+                                            })()}
+                                        </div>
+                                    </div>
+                                    <div
+                                        className={
+                                            styles.dialog_content_info_wrapper
+                                        }
+                                    >
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_name
+                                            }
+                                        >
+                                            风格
+                                        </div>
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_data
+                                            }
+                                        >
+                                            {dialogStyles}
+                                        </div>
+                                    </div>
+                                    <div
+                                        className={
+                                            styles.dialog_content_info_wrapper
+                                        }
+                                    >
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_name
+                                            }
+                                        >
+                                            受众性别
+                                        </div>
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_data
+                                            }
+                                        >
+                                            {dialogGenders}
+                                        </div>
+                                    </div>
+                                    <div
+                                        className={
+                                            styles.dialog_content_info_wrapper
+                                        }
+                                    >
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_name
+                                            }
+                                        >
+                                            受众年龄
+                                        </div>
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_data
+                                            }
+                                        >
+                                            {dialogAges}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </Dialog.Body>
                 <Dialog.Footer>
                     <Button onClick={() => setDialogVisible(false)}>
