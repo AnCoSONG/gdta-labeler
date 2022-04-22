@@ -21,15 +21,21 @@ interface Task {
 export interface AdminState {
     users: User[];
     tasks: Task[];
-    globalProgress: number;
-    imgCount: number;
+    globalProgress: {
+        left: number;
+        right: number;
+        imgCount: number;
+    };
 }
 
 const initialState: AdminState = {
     users: [],
     tasks: [],
-    globalProgress: 0,
-    imgCount: 0,
+    globalProgress: {
+        left: 0,
+        right: 0,
+        imgCount: 0,
+    },
 };
 
 export const fetchTasks = createAsyncThunk("admin/fetchTasks", async () => {
@@ -58,16 +64,17 @@ export const fetchGlobalProgress = createAsyncThunk(
     "admin/fetchGlobalProgress",
     async () => {
         const res1 = await axios.get("/task/global_progress");
-        const res2 = await axios.get('/imgs/count');
+        const res2 = await axios.get("/imgs/count");
         console.log("fetchGlobalProgress", res1, res2);
         if (res1.status === 200 && res2.status === 200) {
             return {
-                globalProgress: res1.data.data,
+                left: res1.data.data.left,
+                right: res1.data.data.right,
                 imgCount: res2.data.data,
             };
         } else {
             error("Failed to fetch global progress");
-            return {};
+            return initialState.globalProgress;
         }
     }
 );
@@ -100,13 +107,14 @@ export const AdminSlice = createSlice({
                 console.log("state.users", state.users);
             })
             .addCase(fetchGlobalProgress.pending, (state, action) => {
-                state.globalProgress = 0;
-                state.imgCount = 0;
+                state.globalProgress = {
+                    ...initialState.globalProgress,
+                };
             })
             .addCase(fetchGlobalProgress.fulfilled, (state, action) => {
-                state.globalProgress = action.payload.globalProgress;
-                state.imgCount = action.payload.imgCount;
-            })
+                console.log(action.payload);
+                state.globalProgress = { ...action.payload };
+            });
     },
 });
 

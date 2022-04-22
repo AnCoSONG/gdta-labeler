@@ -21,11 +21,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { axios, checkChar, cryptolize } from "../../utils";
-import {
-    error,
-    messageConfirm,
-    notification,
-} from "../../utils/notify";
+import { error, messageConfirm, notification } from "../../utils/notify";
 import styles from "./admin.module.scss";
 import { fetchGlobalProgress, fetchTasks, fetchUsers } from "./adminSlice";
 
@@ -138,7 +134,7 @@ export const Admin = () => {
             addTaskDialogTask.count !== 0 &&
             addTaskDialogTask.labeler_id !== ""
         ) {
-            console.log('adding task', addTaskDialogTask)
+            console.log("adding task", addTaskDialogTask);
             setAddTaskDialogLoading(true);
             axios
                 .post("/task", {
@@ -208,15 +204,20 @@ export const Admin = () => {
     const globalProgress = useAppSelector(
         (state) => state.admin.globalProgress
     );
-    const imgCount = useAppSelector((state) => state.admin.imgCount);
 
     const globalProgressText = useMemo(() => {
-        if (imgCount === 0) {
+        if (globalProgress.imgCount === 0) {
             return 0;
         } else {
-            return Math.round((globalProgress / imgCount) * 100);
+            return Number(
+                (
+                    ((globalProgress.right - globalProgress.left) /
+                        globalProgress.imgCount) *
+                    100
+                ).toFixed(2)
+            );
         }
-    }, [globalProgress, imgCount]);
+    }, [globalProgress]);
 
     return (
         <div className={styles.admin_wrapper}>
@@ -398,7 +399,9 @@ export const Admin = () => {
                                     styles.admin_wrapper_content_main_item_global_progress_title
                                 }
                             >
-                                已分配进度: {globalProgress} / {imgCount}
+                                目前进度: 从 {globalProgress.left} 至{" "}
+                                {globalProgress.right}, 共{" "}
+                                {globalProgress.imgCount} 张
                             </div>
                             <Progress
                                 strokeWidth={24}
@@ -512,14 +515,16 @@ export const Admin = () => {
                                                       {!task.finished ? (
                                                           <Progress
                                                               strokeWidth={24}
-                                                              percentage={
-                                                                  (task.progress /
-                                                                      (task
-                                                                          .range[1] -
-                                                                          task
-                                                                              .range[0])) *
-                                                                  100
-                                                              }
+                                                              percentage={Number(
+                                                                  (
+                                                                      (task.progress /
+                                                                          (task
+                                                                              .range[1] -
+                                                                              task
+                                                                                  .range[0])) *
+                                                                      100
+                                                                  ).toFixed(2)
+                                                              )}
                                                               textInside
                                                           />
                                                       ) : (
@@ -759,7 +764,7 @@ export const Admin = () => {
                                     required: true,
                                     message: "需确定打标人",
                                     trigger: "blur",
-                                    type: "string"
+                                    type: "string",
                                 },
                             ],
                         }}
