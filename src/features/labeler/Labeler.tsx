@@ -61,11 +61,15 @@ export const Labeler = () => {
     const labelCardsWrapperRef = useRef<HTMLDivElement>(null);
 
     const smoothScrollback = () => {
-        labelCardsWrapperRef.current!.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: "smooth",
-        });
+        if (labelCardsWrapperRef.current) {
+            labelCardsWrapperRef.current!.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: "smooth",
+            });
+        } else {
+            console.log('labelCardsWrapperRef.current is null')
+        }
     };
 
     // 登录态验证 =========================
