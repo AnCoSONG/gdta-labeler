@@ -52,8 +52,9 @@ export const Login = () => {
         // on showOdd changed
         // const height = document.querySelector("#right")!.clientHeight;
         // const width = document.querySelector("#right")!.clientWidth;
+        let timeoutId: NodeJS.Timeout | null = null;
         axios.get("/sample", { params: { count: 1 } }).then((res) => {
-            setTimeout(() => {
+            timeoutId = setTimeout(() => {
                 // change src after transition done!
                 if (showOdd) {
                     setEvenImg(res.data[0].src);
@@ -62,6 +63,9 @@ export const Login = () => {
                 }
             }, 501);
         });
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        }
     }, [showOdd]);
     // 定时切换odd/even图像
     useEffect(() => {
