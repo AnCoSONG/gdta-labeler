@@ -92,7 +92,7 @@ export const Login = () => {
             error("密码不能为空且不能包含特殊符号");
             return;
         } else if (!checkChar(invitecode)) {
-            error("邀请码不能为空且不能包含特殊符号");
+            error("邀请码格式错误");
             return;
         }
 
