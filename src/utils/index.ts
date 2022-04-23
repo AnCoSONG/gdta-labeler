@@ -19,8 +19,12 @@ export function getDataUrl(img:HTMLImageElement) {
 export const axios = _axios
 
 export const checkChar = (str: string) => {
-    return /^[a-zA-Z0-9_@]+$/.test(str)
-} 
+    return /^[a-zA-Z0-9_@.]+$/.test(str)
+}
+
+export const checkInviteCode = (str: string) => {
+    return /^[🌞🌛🌟🌹🐮]{6}$/.test(str);
+}
 
 export const cryptolize = (str: string) => {
     // console.log(crypto.SHA256(str).toString())

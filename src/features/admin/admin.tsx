@@ -20,7 +20,7 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { axios, checkChar, cryptolize } from "../../utils";
+import { axios, checkChar, checkInviteCode, cryptolize } from "../../utils";
 import { error, messageConfirm, notification } from "../../utils/notify";
 import styles from "./admin.module.scss";
 import { fetchGlobalProgress, fetchTasks, fetchUsers } from "./adminSlice";
@@ -612,7 +612,7 @@ export const Admin = () => {
                                     //@ts-ignore
                                     validator: (rule, value, callback) => {
                                         if (!checkChar(value)) {
-                                            callback("密码必须为纯字母");
+                                            callback("密码必须仅包括字母或@._");
                                         }
                                         callback();
                                     },
@@ -627,9 +627,9 @@ export const Admin = () => {
                                 {
                                     //@ts-ignore
                                     validator: (rule, value, callback) => {
-                                        if (!/^[0-9]+$/.test(value)) {
+                                        if (!checkInviteCode(value)) {
                                             callback(
-                                                "邀请码必须为纯字母或数字"
+                                                "邀请码必须为emoji表情"
                                             );
                                         }
                                         callback();

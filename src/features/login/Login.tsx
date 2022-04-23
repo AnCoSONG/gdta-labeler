@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 // import { useAppDispatch } from "../../app/hooks";
-import { axios } from "../../utils";
+import { axios, checkInviteCode } from "../../utils";
 import styles from "./Login.module.css";
 import loader from "../../assets/loader.gif";
 import { checkChar } from "../../utils";
@@ -65,7 +65,7 @@ export const Login = () => {
         });
         return () => {
             if (timeoutId) clearTimeout(timeoutId);
-        }
+        };
     }, [showOdd]);
     // 定时切换odd/even图像
     useEffect(() => {
@@ -86,13 +86,13 @@ export const Login = () => {
     // 登录 ========================
     const login = async () => {
         if (!checkChar(username)) {
-            error("用户名不能为空且不能包含特殊符号");
+            error("用户名格式有误");
             return;
         } else if (!checkChar(password)) {
-            error("密码不能为空且不能包含特殊符号");
+            error("密码格式有误");
             return;
-        } else if (!checkChar(invitecode)) {
-            error("邀请码格式错误");
+        } else if (!checkInviteCode(invitecode)) {
+            error("邀请码格式有误");
             return;
         }
 
