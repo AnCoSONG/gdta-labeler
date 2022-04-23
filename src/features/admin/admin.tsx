@@ -792,7 +792,7 @@ export const Admin = () => {
                                 defaultValue={addTaskDialogTask.count}
                                 style={{ width: "100%" }}
                                 value={addTaskDialogTask.count}
-                                min={100}
+                                min={1}
                                 step={100}
                                 onChange={(e) => {
                                     console.log(addTaskDialogTask);
