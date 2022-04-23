@@ -385,10 +385,11 @@ export const Labeler = () => {
                 const isQ2Filled = labelData.q2.some((item) => item === true);
                 const isQ3Filled = labelData.q3.some((item) => item === true);
                 const isQ4Filled = labelData.q4.some((item) => item === true);
-                const result = isQ2Filled && isQ3Filled && isQ4Filled;
+                // const result = isQ2Filled && isQ3Filled && isQ4Filled;
+                const result = isQ2Filled;
                 console.log(result, isQ2Filled, isQ3Filled, isQ4Filled);
                 if (!result) {
-                    error("当您认为图像有效时，需要完成在右侧完成全部标注");
+                    error("当您认为图像有效时，需要完成在右侧至少完成风格标注");
                     setConfirmBtnStatus("still");
                     return;
                 }
@@ -750,6 +751,7 @@ export const Labeler = () => {
 
     const done = useAppSelector((state) => state.labeler.done);
 
+    // todo: 优化至labelerSlice
     const [finishedTasks, setFinishedTasks] = useState<
         {
             _id: string;
@@ -777,7 +779,7 @@ export const Labeler = () => {
                 });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [done]);
+    }, [done, userState.id]);
 
     // 申请
     function applyNewTask(
@@ -911,6 +913,8 @@ export const Labeler = () => {
                                         localStorage.removeItem("currentImg");
                                     await dispatch(initLabelerState());
                                     await dispatch(initUserState());
+                                    // todo: 优化实现
+                                    setFinishedTasks([]);
                                     navigate("/login");
                                     break;
                                 case "admin":
