@@ -23,7 +23,7 @@ export const checkChar = (str: string) => {
 }
 
 export const checkInviteCode = (str: string) => {
-    return /^[🌞🌛🌟🌹🐮]{6}$/.test(str);
+    return /^[🌞🌛🌟🌹🐮+]{6}$/.test(str);
 }
 
 export const cryptolize = (str: string) => {
