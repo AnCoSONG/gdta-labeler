@@ -1,25 +1,72 @@
 import commonStyles from "../Common.module.scss";
 import { Popover } from "element-react/next";
-import { contents, i18nstyleMapping, setLabelData, stylesMapping, ValidType } from '../../LabelSlice'
+import {
+    contents,
+    i18nstyleMapping,
+    setLabelData,
+    stylesMapping,
+    ValidType,
+} from "../../LabelSlice";
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 
 export const Question2 = () => {
     const state = useAppSelector((state) => state.labeler.labelData.q2);
-    const valid = useAppSelector(state => state.labeler.labelData.q1)
-    const dispatch = useAppDispatch()
+    const valid = useAppSelector((state) => state.labeler.labelData.q1);
+    const dispatch = useAppDispatch();
     return (
-        <div className={commonStyles.question_card} data-inactive={valid===ValidType.Invalid}>
+        <div
+            className={commonStyles.question_card}
+            data-inactive={valid === ValidType.Invalid}
+        >
             <div className={commonStyles.question_card_title}>
                 2. 这幅作品属于哪些风格?(多选)
             </div>
             <div className={commonStyles.question_card_content}>
                 <ul className={commonStyles.tags}>
-                    {(new Array(8)).fill(0).map((item, index) => {
-                        return <Popover placement="top-start" title={stylesMapping[index]+" " + i18nstyleMapping[index]} trigger="hover" content={contents[index]}>
-                        <li className={commonStyles.tag} data-selected={state[index]} onClick={() => dispatch(setLabelData({question: "q2", data: {idx: index, data: !state[index]} }))}>{stylesMapping[index]+" " + i18nstyleMapping[index]}</li>
-                    </Popover>
+                    {new Array(8).fill(0).map((item, index) => {
+                        return (
+                            <li
+                                className={commonStyles.tag}
+                                data-selected={state[index]}
+                                onClick={() =>
+                                    dispatch(
+                                        setLabelData({
+                                            question: "q2",
+                                            data: {
+                                                idx: index,
+                                                data: !state[index],
+                                            },
+                                        })
+                                    )
+                                }
+                            >
+                                <span className={commonStyles.tag_text}>
+                                    {stylesMapping[index] +
+                                        " " +
+                                        i18nstyleMapping[index]}
+                                </span>
+                                <Popover
+                                    placement="top-start"
+                                    title={
+                                        stylesMapping[index] +
+                                        " " +
+                                        i18nstyleMapping[index]
+                                    }
+                                    trigger="hover"
+                                    content={contents[index]}
+                                >
+                                    <span className={commonStyles.tag_info}>
+                                        <FontAwesomeIcon
+                                            icon={faInfoCircle}
+                                        ></FontAwesomeIcon>
+                                    </span>
+                                </Popover>
+                            </li>
+                        );
                     })}
-                {/* <Popover placement="top-start" title={stylesMapping[0]+" " + i18nstyleMapping[0]} trigger="hover" content="以少量的设计元素组合的平面设计形式，常常辅以留白来传达空旷的意境或激发读者的想象。">
+                    {/* <Popover placement="top-start" title={stylesMapping[0]+" " + i18nstyleMapping[0]} trigger="hover" content="以少量的设计元素组合的平面设计形式，常常辅以留白来传达空旷的意境或激发读者的想象。">
                     <li className={commonStyles.tag} data-selected={state[0]} onClick={() => dispatch(setLabelData({question: "q2", data: {idx: 0, data: !state[0]} }))}>{stylesMapping[0]+" " + i18nstyleMapping[0]}</li>
                 </Popover>
                 <Popover placement="top-start" title={stylesMapping[1]+" " + i18nstyleMapping[1]} trigger="hover" content="利用具有科技感的视觉元素，如芯片、电子、通讯、网络、荧光、太空等，营造出先锋、前沿的视觉体验。">

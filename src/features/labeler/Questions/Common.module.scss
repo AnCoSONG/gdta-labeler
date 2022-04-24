@@ -76,7 +76,7 @@
     display: block;
     // width: 100%;
     box-sizing: border-box;
-    .tag{
+    .tag {
         list-style: none;
         display: inline-flex;
         padding: 6px 10px;
@@ -86,13 +86,28 @@
         font-size: 0.8rem;
         color: #191919;
         cursor: pointer;
-        user-select: none;
+
+        flex-direction: row;
+        align-items: center;
         &:hover {
             background-color: rgb(245, 245, 245);
         }
-        &[data-selected=true] {
-            background-color:var(--color-primary);
-            color:white;
+        &[data-selected="true"] {
+            background-color: var(--color-primary);
+            color: white;
+
+            .tag_info {
+                color:white;
+            }
+        }
+
+        .tag_text {
+            user-select: none;
+        }
+
+        .tag_info {
+            margin-left: 10px;
+            color: #999;
         }
     }
 }
