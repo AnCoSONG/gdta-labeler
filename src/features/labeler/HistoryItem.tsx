@@ -1,19 +1,20 @@
 import styles from "./HistoryItem.module.scss";
-import { LabelHistory } from "./LabelSlice";
+import { LabelHistory, STAGE, ValidType } from "./LabelSlice";
 import { v4 } from "uuid";
 import React from "react";
+import { useAppSelector } from "../../app/hooks";
 
 type PropType = {
     onClick: (e: React.MouseEvent) => void;
 } & LabelHistory;
 export const HistoryItem = (prop: PropType) => {
     // 修改标注
-    
+    const stage = useAppSelector((state) => state.labeler.stage);
     return (
         // 完成卡片交互!
         <div className={styles.item} onClick={prop.onClick}>
             <div className={styles.badge} data-finished={prop.finished}>
-                {prop.finished? '✔' : '✘'}
+                {prop.finished ? "✔" : "✘"}
             </div>
             <div className={styles.item_left}>
                 <div className={styles.item_firstline}>
@@ -29,50 +30,66 @@ export const HistoryItem = (prop: PropType) => {
                     <div className={styles.item_secondline_check_wrapper}>
                         <div
                             className={styles.check}
-                            data-checked={prop.valid===0}
+                            data-checked={prop.valid === ValidType.Valid}
                         ></div>
                         <div
-                            className={styles.check +" " + styles.after_process}
-                            data-checked={prop.valid===1}
+                            className={
+                                styles.check + " " + styles.after_process
+                            }
+                            data-checked={
+                                prop.valid === ValidType.ValidAfterProcessing
+                            }
                         ></div>
                         <div
-                            className={styles.check+" "+styles.check_invalid}
-                            data-checked={prop.valid===2}
+                            className={
+                                styles.check + " " + styles.check_invalid
+                            }
+                            data-checked={prop.valid === ValidType.Invalid}
                         ></div>
                     </div>
-                    <div className={styles.item_secondline_check_wrapper}>
-                        {prop.styles.map((item) => {
-                            return (
-                                <div
-                                    className={styles.check}
-                                    key={v4()}
-                                    data-checked={item}
-                                ></div>
-                            );
-                        })}
-                    </div>
-                    <div className={styles.item_secondline_check_wrapper}>
-                        {prop.audience_gender.map((item) => {
-                            return (
-                                <div
-                                    className={styles.check}
-                                    key={v4()}
-                                    data-checked={item}
-                                ></div>
-                            );
-                        })}
-                    </div>
-                    <div className={styles.item_secondline_check_wrapper}>
-                        {prop.audience_age.map((item) => {
-                            return (
-                                <div
-                                    className={styles.check}
-                                    key={v4()}
-                                    data-checked={item}
-                                ></div>
-                            );
-                        })}
-                    </div>
+                    {stage !== STAGE.ONLY_VALID && (
+                        <>
+                            <div
+                                className={styles.item_secondline_check_wrapper}
+                            >
+                                {prop.styles.map((item) => {
+                                    return (
+                                        <div
+                                            className={styles.check}
+                                            key={v4()}
+                                            data-checked={item}
+                                        ></div>
+                                    );
+                                })}
+                            </div>
+                            <div
+                                className={styles.item_secondline_check_wrapper}
+                            >
+                                {prop.audience_gender.map((item) => {
+                                    return (
+                                        <div
+                                            className={styles.check}
+                                            key={v4()}
+                                            data-checked={item}
+                                        ></div>
+                                    );
+                                })}
+                            </div>
+                            <div
+                                className={styles.item_secondline_check_wrapper}
+                            >
+                                {prop.audience_age.map((item) => {
+                                    return (
+                                        <div
+                                            className={styles.check}
+                                            key={v4()}
+                                            data-checked={item}
+                                        ></div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
             <div className={styles.item_right}>
