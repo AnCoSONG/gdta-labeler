@@ -22,8 +22,8 @@ export interface AdminState {
     users: User[];
     tasks: Task[];
     globalProgress: {
-        left: number;
-        right: number;
+        labeled_count: number;
+        allocated_count: number;
         imgCount: number;
     };
 }
@@ -32,8 +32,8 @@ const initialState: AdminState = {
     users: [],
     tasks: [],
     globalProgress: {
-        left: 0,
-        right: 0,
+        labeled_count: 0,
+        allocated_count: 0,
         imgCount: 0,
     },
 };
@@ -68,8 +68,8 @@ export const fetchGlobalProgress = createAsyncThunk(
         console.log("fetchGlobalProgress", res1, res2);
         if (res1.status === 200 && res2.status === 200) {
             return {
-                left: res1.data.data.left,
-                right: res1.data.data.right,
+                labeled_count: res1.data.data.labeled_count,
+                allocated_count: res1.data.data.allocated_count,
                 imgCount: res2.data.data,
             };
         } else {

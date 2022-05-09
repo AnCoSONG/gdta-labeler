@@ -211,9 +211,8 @@ export const Admin = () => {
         } else {
             return Number(
                 (
-                    ((globalProgress.right - globalProgress.left) /
-                        globalProgress.imgCount) *
-                    100
+                    (globalProgress.labeled_count / globalProgress.allocated_count)
+                     * 100
                 ).toFixed(2)
             );
         }
@@ -399,15 +398,25 @@ export const Admin = () => {
                                     styles.admin_wrapper_content_main_item_global_progress_title
                                 }
                             >
-                                目前进度: 从 {globalProgress.left} 至{" "}
-                                {globalProgress.right}, 共{" "}
-                                {globalProgress.imgCount} 张
+                                目前，共有 {globalProgress.imgCount} 张，共分配 {globalProgress.allocated_count} 张，标注 {globalProgress.labeled_count} 张
+                            </div>
+                            <div>
+                                
+                            </div>
+                            <div className={styles.admin_wrapper_content_main_item_global_progress_title}>
+                                已分配的标注任务进度
                             </div>
                             <Progress
                                 strokeWidth={24}
                                 percentage={globalProgressText}
                                 textInside
                             ></Progress>
+                            <div className={styles.admin_wrapper_content_main_item_global_progress_title}>
+                                全进度
+                            </div>
+                            <div className={styles.custom_detailed_process}>
+                                
+                            </div>
                         </div>
                         <div
                             className={
