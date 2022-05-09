@@ -1,10 +1,12 @@
 import {
+    faAdd,
     faAsterisk,
     faCode,
     faHomeAlt,
     faIdBadge,
     faIdCardAlt,
     faLifeRing,
+    faSync,
     faUserAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -14,13 +16,20 @@ import {
     Form,
     Input,
     InputNumber,
+    Popover,
     Progress,
     Select,
 } from "element-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { axios, checkChar, checkInviteCode, cryptolize } from "../../utils";
+import {
+    axios,
+    checkChar,
+    checkInviteCode,
+    checkUsername,
+    cryptolize,
+} from "../../utils";
 import { error, messageConfirm, notification } from "../../utils/notify";
 import styles from "./admin.module.scss";
 import { fetchGlobalProgress, fetchTasks, fetchUsers } from "./adminSlice";
@@ -201,6 +210,8 @@ export const Admin = () => {
     // 删除任务 =========================================================
 
     // 全局进度条
+    const [taskDetailVisible, setTaskDetailVisible] = useState(false);
+    const [taskIdxToShow, setTaskIdxToShow] = useState(-1);
     const globalProgress = useAppSelector(
         (state) => state.admin.globalProgress
     );
@@ -211,12 +222,23 @@ export const Admin = () => {
         } else {
             return Number(
                 (
-                    (globalProgress.labeled_count / globalProgress.allocated_count)
-                     * 100
+                    (globalProgress.labeled_count /
+                        globalProgress.allocated_count) *
+                    100
                 ).toFixed(2)
             );
         }
     }, [globalProgress]);
+
+    // 全局进度条 =========================================================
+
+    // 刷新
+    const [fetching, setFetching] = useState(false);
+    const refresh = async () => { 
+        setFetching(true);
+        await Promise.all([dispatch(fetchUsers()), dispatch(fetchTasks()), dispatch(fetchGlobalProgress())])
+        setFetching(false);
+    }
 
     return (
         <div className={styles.admin_wrapper}>
@@ -227,12 +249,19 @@ export const Admin = () => {
                             fontSize: "2rem",
                             color: "#aaa",
                             cursor: "pointer",
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
                         }}
-                        onClick={(e) => {
-                            navigate("/");
-                        }}
+                        
                     >
-                        <FontAwesomeIcon icon={faHomeAlt}></FontAwesomeIcon>
+                        <FontAwesomeIcon icon={faHomeAlt} onClick={(e) => {
+                            navigate("/");
+                        }}></FontAwesomeIcon>
+                        <FontAwesomeIcon icon={faSync} className={fetching?'fa-spin':''} onClick={() => {
+                            refresh();
+                        }}></FontAwesomeIcon>
                     </div>
                     <div className={styles.admin_wrapper_content_header_title}>
                         管理员页面 (WIP)
@@ -336,6 +365,17 @@ export const Admin = () => {
                                                   </div>
                                                   <div
                                                       className={
+                                                          styles.admin_wrapper_content_main_card_text
+                                                      }
+                                                  >
+                                                      {" "}
+                                                      <FontAwesomeIcon
+                                                          icon={faAdd}
+                                                      ></FontAwesomeIcon>
+                                                      &nbsp;&nbsp;{labeler.count} 张
+                                                  </div>
+                                                  <div
+                                                      className={
                                                           styles.admin_wrapper_content_main_card_btns
                                                       }
                                                   >
@@ -398,24 +438,141 @@ export const Admin = () => {
                                     styles.admin_wrapper_content_main_item_global_progress_title
                                 }
                             >
-                                目前，共有 {globalProgress.imgCount} 张，共分配 {globalProgress.allocated_count} 张，标注 {globalProgress.labeled_count} 张
+                                目前，共有 {globalProgress.imgCount} 张，共分配{" "}
+                                {globalProgress.allocated_count} 张，标注{" "}
+                                {globalProgress.labeled_count} 张
                             </div>
-                            <div>
-                                
-                            </div>
-                            <div className={styles.admin_wrapper_content_main_item_global_progress_title}>
-                                已分配的标注任务进度
+                            <div></div>
+                            <div
+                                className={
+                                    styles.admin_wrapper_content_main_item_global_progress_title
+                                }
+                            >
+                                目前已分配的标注任务进度
                             </div>
                             <Progress
                                 strokeWidth={24}
                                 percentage={globalProgressText}
                                 textInside
                             ></Progress>
-                            <div className={styles.admin_wrapper_content_main_item_global_progress_title}>
-                                全进度
-                            </div>
-                            <div className={styles.custom_detailed_process}>
-                                
+                            <div
+                                className={
+                                    styles.admin_wrapper_content_main_item_global_progress_title
+                                }
+                            >
+                                全进度{" "}
+                                {
+                                    ((globalProgress.labeled_count /
+                                        globalProgress.imgCount) * 100)
+                                .toFixed(2)}
+                                % /{" "}
+                                {(
+                                    (globalProgress.allocated_count /
+                                        globalProgress.imgCount) *
+                                        100
+                                ).toFixed(2)}
+                                %
+                                <div className={styles.custom_progress}>
+                                    <div
+                                        className={styles.custom_progress_main}
+                                    >
+                                        {tasks.map((task, index) => {
+                                            return (
+                                                <div
+                                                    className={styles.task}
+                                                    key={task._id}
+                                                    onClick={() => {
+                                                        setTaskIdxToShow(index);
+                                                        setTaskDetailVisible(
+                                                            true
+                                                        );
+                                                    }}
+                                                    style={{
+                                                        left: `${
+                                                            (100 *
+                                                                task.range[0]) /
+                                                            globalProgress.imgCount
+                                                        }%`,
+                                                        width: `${
+                                                            (100 *
+                                                                (task.range[1] -
+                                                                    task
+                                                                        .range[0])) /
+                                                            globalProgress.imgCount
+                                                        }%`,
+                                                    }}
+                                                >
+                                                    {/* <div
+                                                        className={
+                                                            styles.task_info
+                                                        }
+                                                    >
+                                                        {task.range[0] -
+                                                            task.range[1]}
+                                                    </div> */}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                <Dialog
+                                    title="任务详细信息"
+                                    visible={taskDetailVisible}
+                                    onCancel={() => {
+                                        setTaskIdxToShow(-1);
+                                        setTaskDetailVisible(false);
+                                    }}
+                                >
+                                    <Dialog.Body>
+                                        {taskIdxToShow !== -1 &&
+                                            Object.keys(
+                                                tasks[taskIdxToShow]
+                                            ).map((item) => {
+                                                // console.log(item, tasks[taskIdxToShow][item]);
+                                                return (
+                                                    <div
+                                                        className={
+                                                            styles.dialog_table
+                                                        }
+                                                        key={item}
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.dialog_key
+                                                            }
+                                                        >
+                                                            {item}
+                                                        </span>
+                                                        <span
+                                                            className={
+                                                                styles.dialog_value
+                                                            }
+                                                        >
+                                                            {
+                                                                // @ts-ignore
+                                                                tasks[
+                                                                    taskIdxToShow
+                                                                ][
+                                                                    item
+                                                                ].toString()
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                    </Dialog.Body>
+                                    <Dialog.Footer className="dialog-footer">
+                                        <Button
+                                            type="primary"
+                                            onClick={() => {
+                                                setTaskIdxToShow(-1);
+                                                setTaskDetailVisible(false);
+                                            }}
+                                        >
+                                            确定
+                                        </Button>
+                                    </Dialog.Footer>
+                                </Dialog>
                             </div>
                         </div>
                         <div
@@ -497,6 +654,25 @@ export const Admin = () => {
                                                           }}
                                                       >
                                                           {task.labeler_id}
+                                                      </span>
+                                                  </div>
+                                                  <div
+                                                      className={
+                                                          styles.admin_wrapper_content_main_task_line
+                                                      }
+                                                  >
+                                                      <FontAwesomeIcon
+                                                          icon={faIdCardAlt}
+                                                      ></FontAwesomeIcon>
+                                                      <span
+                                                          style={{
+                                                              marginLeft:
+                                                                  "10px",
+                                                          }}
+                                                      >
+                                                          {
+                                                              task.labeler_username
+                                                          }
                                                       </span>
                                                   </div>
                                                   <div
@@ -594,8 +770,10 @@ export const Admin = () => {
                                 {
                                     //@ts-ignore
                                     validator: (rule, value, callback) => {
-                                        if (!/^[a-zA-Z0-9]+$/.test(value)) {
-                                            callback("用户名必须为字母或数字");
+                                        if (!checkUsername(value)) {
+                                            callback(
+                                                "用户名必须为字母或数字或者中文"
+                                            );
                                         }
                                         if (
                                             labelers
@@ -637,9 +815,7 @@ export const Admin = () => {
                                     //@ts-ignore
                                     validator: (rule, value, callback) => {
                                         if (!checkInviteCode(value)) {
-                                            callback(
-                                                "邀请码必须为emoji表情"
-                                            );
+                                            callback("邀请码必须为emoji表情");
                                         }
                                         callback();
                                     },

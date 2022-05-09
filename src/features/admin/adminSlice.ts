@@ -8,11 +8,13 @@ interface User {
     role: string;
     avatar: string;
     invitecode: string;
+    count: number;
 }
 
 interface Task {
     _id: string;
     labeler_id: string;
+    labeler_username: string;
     range: [number, number];
     progress: number;
     finished: boolean;

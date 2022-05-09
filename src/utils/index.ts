@@ -18,6 +18,10 @@ export function getDataUrl(img:HTMLImageElement) {
 
 export const axios = _axios
 
+export const checkUsername = (str: string) => {
+    return /^[\u4e00-\u9fa5a-zA-Z0-9_@.]+$/.test(str);
+}
+
 export const checkChar = (str: string) => {
     return /^[a-zA-Z0-9_@.]+$/.test(str)
 }

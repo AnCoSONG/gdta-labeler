@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 // import { useAppDispatch } from "../../app/hooks";
-import { axios, checkInviteCode } from "../../utils";
+import { axios, checkInviteCode, checkUsername } from "../../utils";
 import styles from "./Login.module.css";
 import loader from "../../assets/loader.gif";
 import { checkChar } from "../../utils";
@@ -85,7 +85,7 @@ export const Login = () => {
 
     // 登录 ========================
     const login = async () => {
-        if (!checkChar(username)) {
+        if (!checkUsername(username)) {
             error("用户名格式有误");
             return;
         } else if (!checkChar(password)) {
