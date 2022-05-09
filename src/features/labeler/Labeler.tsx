@@ -35,6 +35,7 @@ import {
     LabelHistory,
     setLabelDataAsObject,
     setLabelImageLoadedStatus,
+    STAGE,
     stylesMapping,
     ValidType,
 } from "./LabelSlice";
@@ -55,6 +56,7 @@ const getTransform = (DOM: Element) => {
 export const Labeler = () => {
     document.title = "Label";
     const userState = useAppSelector((state) => state.user);
+    const stage = useAppSelector((state) => state.labeler.stage);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
@@ -68,7 +70,7 @@ export const Labeler = () => {
                 behavior: "smooth",
             });
         } else {
-            console.log('labelCardsWrapperRef.current is null')
+            console.log("labelCardsWrapperRef.current is null");
         }
     };
 
@@ -379,24 +381,34 @@ export const Labeler = () => {
         }
         if (confirmBtnStatus === "still") {
             setConfirmBtnStatus("loading");
-            // check if the image is already labeled
-            if (labelData.q1 !== ValidType.Invalid) {
-                // 如果其他元素都是false，则说明没有标注过
-                const isQ2Filled = labelData.q2.some((item) => item === true);
-                const isQ3Filled = labelData.q3.some((item) => item === true);
-                const isQ4Filled = labelData.q4.some((item) => item === true);
-                // const result = isQ2Filled && isQ3Filled && isQ4Filled;
-                const result = isQ2Filled;
-                console.log(result, isQ2Filled, isQ3Filled, isQ4Filled);
-                if (!result) {
-                    error("当您认为图像有效时，需要完成在右侧至少完成风格标注");
-                    setConfirmBtnStatus("still");
-                    return;
+            if (stage === STAGE.ALL || stage === STAGE.ONLY_STYLE) {
+                // check if the image is already labeled
+                if (labelData.q1 !== ValidType.Invalid) {
+                    // 如果其他元素都是false，则说明没有标注过
+                    const isQ2Filled = labelData.q2.some(
+                        (item) => item === true
+                    );
+                    const isQ3Filled = labelData.q3.some(
+                        (item) => item === true
+                    );
+                    const isQ4Filled = labelData.q4.some(
+                        (item) => item === true
+                    );
+                    // const result = isQ2Filled && isQ3Filled && isQ4Filled;
+                    const result = isQ2Filled;
+                    console.log(result, isQ2Filled, isQ3Filled, isQ4Filled);
+                    if (!result) {
+                        error(
+                            "当您认为图像有效时，需要完成在右侧至少完成风格标注"
+                        );
+                        setConfirmBtnStatus("still");
+                        return;
+                    }
                 }
-            }
+            } // STAGE.only_valid不做验证
             // 上传打标记录
             const res = await axios
-                .post("/task/finish", {
+                .post(`/task/finish?stage=${stage}`, {
                     img_id: labelImage._id,
                     img_src: labelImage.src,
                     img_title: labelImage.title,
@@ -487,7 +499,7 @@ export const Labeler = () => {
                 //* finished: false 实现
                 //* 这种skip会把当前没有打标好的数据也上传，但会标记为unfinished
                 const create_unfinished_res = await axios
-                    .post("/task/finish", {
+                    .post(`/task/finish?stage=${stage}`, {
                         img_id: labelImage._id,
                         img_src: labelImage.src,
                         img_title: labelImage.title,
@@ -1150,10 +1162,20 @@ export const Labeler = () => {
                                 ref={labelCardsWrapperRef}
                                 // style={{ height: `${calcedHeight.current}px` }}
                             >
-                                <Q1 />
-                                <Q2 />
-                                <Q3 />
-                                <Q4 />
+                                <Q1
+                                    onDoubleClick={(e: React.MouseEvent) => {
+                                        if (stage === STAGE.ONLY_VALID) {
+                                            onConfirmClick(e);
+                                        }
+                                    }}
+                                />
+                                {stage !== STAGE.ONLY_VALID && (
+                                    <>
+                                        <Q2 />
+                                        <Q3 />
+                                        <Q4 />
+                                    </>
+                                )}
                             </div>
                             <div className={styles.label_confirm}>
                                 <div

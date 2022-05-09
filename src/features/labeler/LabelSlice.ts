@@ -24,6 +24,17 @@ export const contents = [
 export const genderMapping = "男性,女性".split(",");
 export const agesMapping = "青少年,青年,壮年,中年,老年".split(",");
 
+export enum STAGE {
+    ALL = 0,
+    ONLY_VALID = 1,
+    ONLY_STYLE = 2,
+}
+
+export enum ValidType {
+    Valid = 0,
+    ValidAfterProcessing = 1,
+    Invalid = 2,
+}
 export type LabelHistory = {
     _id: string;
     img_id: string;
@@ -37,7 +48,7 @@ export type LabelHistory = {
 };
 
 export type LabelData = {
-    q1: number;
+    q1: ValidType;
     // 简约/简洁,科技,复古/古典,卡通/插画,复杂/装饰,写实/摄影,字体设计,其他
     q2: boolean[];
     q3: boolean[];
@@ -81,13 +92,10 @@ type LabelSliceType = {
     editing: boolean;
     labelImageLoaded: boolean;
     done: boolean;
+    stage: STAGE;
 };
 
-export enum ValidType {
-    Valid = 0,
-    ValidAfterProcessing = 1,
-    Invalid = 2,
-}
+
 
 export const initState: LabelSliceType = {
     history: [],
@@ -112,6 +120,7 @@ export const initState: LabelSliceType = {
     editing: false,
     labelImageLoaded: false,
     done: false,
+    stage: STAGE.ONLY_VALID, // change this to make effect on post.
 };
 
 export const fetchImageDataAsync = createAsyncThunk(
