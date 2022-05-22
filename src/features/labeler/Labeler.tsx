@@ -22,6 +22,8 @@ import {
     faFlag,
     faShare,
     faEdit,
+    faAngleLeft,
+    faAngleRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { error, messageAlert, success, warn } from "../../utils/notify";
 import { setUserInfo, initUserState } from "../user/userSlice";
@@ -685,8 +687,13 @@ export const Labeler = () => {
 
     //? 打开dialog ====================
     const [dialogVisible, setDialogVisible] = useState(false);
+    const [dialogCurrentDataIndex, setDialogCurrentDataIndex] = useState(0);
     const [dialogCurrentData, setDialogCurrentData] = useState<LabelHistory>();
     const [dialogConfirmLoading, setDialogConfirmLoading] = useState(false);
+    useEffect(() => {
+        // console.log(dialogCurrentDataIndex);
+        setDialogCurrentData(historyState[dialogCurrentDataIndex]);
+    }, [dialogCurrentDataIndex, historyState]);
     const dialogTitle = useMemo(() => {
         if (dialogCurrentData) {
             return `"${dialogCurrentData.img_title}"的标注记录`;
@@ -1433,6 +1440,64 @@ export const Labeler = () => {
                             </div>
                         ) : (
                             <>
+                                <div
+                                    className={styles.dialog_content_left_right}
+                                >
+                                    <FontAwesomeIcon
+                                        icon={faAngleLeft}
+                                        onClick={() => {
+                                            if (dialogCurrentDataIndex === 0) {
+                                                return;
+                                            }
+                                            setDialogCurrentDataIndex(
+                                                dialogCurrentDataIndex - 1
+                                            );
+                                            // setDialogCurrentData(
+                                            //     historyState[
+                                            //         dialogCurrentDataIndex
+                                            //     ]
+                                            // );
+                                        }}
+                                        className={
+                                            styles.dialog_content_cover_left
+                                        }
+                                        style={{
+                                            color:
+                                                dialogCurrentDataIndex === 0
+                                                    ? "#ccc"
+                                                    : "#000",
+                                        }}
+                                    ></FontAwesomeIcon>
+                                    <FontAwesomeIcon
+                                        icon={faAngleRight}
+                                        onClick={() => {
+                                            if (
+                                                dialogCurrentDataIndex ===
+                                                historyState.length - 1
+                                            ) {
+                                                return;
+                                            }
+                                            setDialogCurrentDataIndex(
+                                                dialogCurrentDataIndex + 1
+                                            );
+                                            // setDialogCurrentData(
+                                            //     historyState[
+                                            //         dialogCurrentDataIndex
+                                            //     ]
+                                            // );
+                                        }}
+                                        className={
+                                            styles.dialog_content_cover_right
+                                        }
+                                        style={{
+                                            color:
+                                                dialogCurrentDataIndex ===
+                                                historyState.length - 1
+                                                    ? "#ccc"
+                                                    : "#000",
+                                        }}
+                                    ></FontAwesomeIcon>
+                                </div>
                                 <div className={styles.dialog_content_cover}>
                                     <img
                                         src={dialogCurrentData.img_src}
@@ -1664,11 +1729,12 @@ export const Labeler = () => {
                     {historyLoading ? (
                         <Loader />
                     ) : historyState.length > 0 ? (
-                        historyState.map((item) => {
+                        historyState.map((item, index) => {
                             return (
                                 <HistoryItem
                                     onClick={(e) => {
-                                        setDialogCurrentData(item);
+                                        setDialogCurrentDataIndex(index);
+                                        // setDialogCurrentData(item);
                                         setDialogVisible(true);
                                     }}
                                     key={item._id}
