@@ -590,7 +590,7 @@ export const Admin = () => {
                             className={styles.admin_wrapper_content_main_tasks}
                         >
                             {tasks.length > 0
-                                ? tasks.map((task) => {
+                                ? tasks.map((task, index) => {
                                       return (
                                           <div
                                               className={
@@ -734,6 +734,14 @@ export const Admin = () => {
                                                           }
                                                       >
                                                           删除
+                                                      </Button>
+                                                      <Button type="text" onClick={(e) => {
+                                                          setTaskIdxToShow(index);
+                                                          setTaskDetailVisible(
+                                                              true
+                                                          );
+                                                      }}>
+                                                          详情
                                                       </Button>
                                                   </div>
                                               </div>

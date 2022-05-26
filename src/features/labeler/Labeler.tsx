@@ -9,7 +9,7 @@ import { HistoryItem } from "./HistoryItem";
 import { Q1, Q2, Q3, Q4 } from "./Questions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import throttle from "lodash.throttle";
-import { Tag, Dropdown, Checkbox } from "element-react/next";
+import { Tag, Dropdown, Checkbox, Radio } from "element-react/next";
 import {
     faUserFriends,
     faClock,
@@ -39,6 +39,7 @@ import {
     setLabelImageLoadedStatus,
     STAGE,
     stylesMapping,
+    updateHistoryStateAtIdx,
     ValidType,
 } from "./LabelSlice";
 import { Loader } from "../loading/loader";
@@ -813,6 +814,66 @@ export const Labeler = () => {
         window.open(url, "_blank");
     };
 
+    // 对话框内编辑
+    const [validationEdit, setValidationEdit] = useState(false);
+    const [oldValidation, setOldValidation] = useState<ValidType>(
+        ValidType.Valid
+    );
+    const handleRadioGroupChange = (value: ValidType) => {
+        if (dialogCurrentData) {
+            setDialogCurrentData({ ...dialogCurrentData, valid: value });
+        }
+    };
+    const handleValidationEdit = () => {
+        setValidationEdit(true);
+        setOldValidation(dialogCurrentData!.valid);
+    };
+    const handleValidationCancel = () => {
+        if (dialogCurrentData) {
+            setValidationEdit(false);
+            setDialogCurrentData({
+                ...dialogCurrentData,
+                valid: oldValidation,
+            });
+        }
+    };
+
+    const handleValidationSave = async () => {
+        if (dialogCurrentData) {
+            if (dialogCurrentData.valid === oldValidation) {
+                // 如果没变化，直接返回
+                setValidationEdit(false);
+                return;
+            } else {
+                // 如果有变化
+                const res = await axios
+                    .post(`/task/updateRecord`, {
+                        img_id: dialogCurrentData.img_id,
+                        labeler_id: userState.id,
+                        valid: dialogCurrentData.valid,
+                    })
+                    .catch((err) => {
+                        error(err.name);
+                        return null;
+                    });
+                if (res) {
+                    console.log('updateRecord', res)
+                    // 更新history state里面的值
+                    dispatch(updateHistoryStateAtIdx({
+                        idx: dialogCurrentDataIndex,
+                        valid: dialogCurrentData.valid
+                    }));
+                    setTimeout(() => {
+                        console.log(dialogCurrentDataIndex, dialogCurrentData, historyState[dialogCurrentDataIndex])
+                    }, 0)
+                    setValidationEdit(false);
+                } else {
+                    handleValidationCancel();
+                }
+            }
+        }
+    };
+
     return (
         <div className={styles.wrapper}>
             <nav className={styles.nav}>
@@ -1563,6 +1624,93 @@ export const Labeler = () => {
                                                         return "未知";
                                                 }
                                             })()}
+                                        </div>
+                                    </div>
+                                    <div
+                                        className={
+                                            styles.dialog_content_info_wrapper
+                                        }
+                                    >
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_name
+                                            }
+                                        >
+                                            是否有效
+                                        </div>
+                                        <div
+                                            className={
+                                                styles.dialog_conntent_info_data
+                                            }
+                                        >
+                                            <Radio.Group
+                                                value={dialogCurrentData.valid}
+                                                onChange={(value) => {
+                                                    // console.log(value);
+                                                    handleRadioGroupChange(
+                                                        value as ValidType
+                                                    );
+                                                }}
+                                            >
+                                                <Radio
+                                                    value={ValidType.Valid}
+                                                    disabled={!validationEdit}
+                                                >
+                                                    有效
+                                                </Radio>
+                                                <Radio
+                                                    value={
+                                                        ValidType.ValidAfterProcessing
+                                                    }
+                                                    disabled={!validationEdit}
+                                                >
+                                                    处理后有效
+                                                </Radio>
+                                                <Radio
+                                                    value={ValidType.Invalid}
+                                                    disabled={!validationEdit}
+                                                >
+                                                    无效
+                                                </Radio>
+                                            </Radio.Group>
+                                            {!validationEdit ? (
+                                                <Button
+                                                    type="text"
+                                                    style={{
+                                                        marginLeft: "20px",
+                                                    }}
+                                                    onClick={
+                                                        handleValidationEdit
+                                                    }
+                                                >
+                                                    编辑
+                                                </Button>
+                                            ) : (
+                                                <>
+                                                    <Button
+                                                        type="text"
+                                                        style={{
+                                                            marginLeft: "20px",
+                                                        }}
+                                                        onClick={
+                                                            handleValidationCancel
+                                                        }
+                                                    >
+                                                        取消
+                                                    </Button>
+                                                    <Button
+                                                        type="text"
+                                                        style={{
+                                                            marginLeft: "20px",
+                                                        }}
+                                                        onClick={
+                                                            handleValidationSave
+                                                        }
+                                                    >
+                                                        保存
+                                                    </Button>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                     <div

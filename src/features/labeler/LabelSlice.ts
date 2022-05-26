@@ -95,8 +95,6 @@ type LabelSliceType = {
     stage: STAGE;
 };
 
-
-
 export const initState: LabelSliceType = {
     history: [],
     count: 20,
@@ -297,6 +295,12 @@ export const labelSlice = createSlice({
         setLabelImageLoadedStatus: (state, action: PayloadAction<boolean>) => {
             state.labelImageLoaded = action.payload;
         },
+        updateHistoryStateAtIdx: (
+            state,
+            action: PayloadAction<{ idx: number; valid: ValidType }>
+        ) => {
+            state.history[action.payload.idx].valid = action.payload.valid;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -352,5 +356,6 @@ export const {
     setLabelDataAsObject,
     setLabelImageLoadedStatus,
     selectAll,
+    updateHistoryStateAtIdx,
 } = labelSlice.actions;
 export default labelSlice.reducer;
