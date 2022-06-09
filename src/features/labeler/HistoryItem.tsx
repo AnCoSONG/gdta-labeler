@@ -2,14 +2,13 @@ import styles from "./HistoryItem.module.scss";
 import { LabelHistory, STAGE, ValidType } from "./LabelSlice";
 import { v4 } from "uuid";
 import React from "react";
-import { useAppSelector } from "../../app/hooks";
 
 type PropType = {
     onClick: (e: React.MouseEvent) => void;
+    stage: STAGE,
 } & LabelHistory;
 export const HistoryItem = (prop: PropType) => {
     // 修改标注
-    const stage = useAppSelector((state) => state.labeler.stage);
     return (
         // 完成卡片交互!
         <div className={styles.item} onClick={prop.onClick}>
@@ -47,7 +46,7 @@ export const HistoryItem = (prop: PropType) => {
                             data-checked={prop.valid === ValidType.Invalid}
                         ></div>
                     </div>
-                    {stage !== STAGE.ONLY_VALID && (
+                    {prop.stage !== STAGE.ONLY_VALID && (
                         <>
                             <div
                                 className={styles.item_secondline_check_wrapper}
@@ -62,7 +61,7 @@ export const HistoryItem = (prop: PropType) => {
                                     );
                                 })}
                             </div>
-                            <div
+                            {/* <div
                                 className={styles.item_secondline_check_wrapper}
                             >
                                 {prop.audience_gender.map((item) => {
@@ -87,7 +86,7 @@ export const HistoryItem = (prop: PropType) => {
                                         ></div>
                                     );
                                 })}
-                            </div>
+                            </div> */}
                         </>
                     )}
                 </div>

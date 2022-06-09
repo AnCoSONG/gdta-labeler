@@ -3,6 +3,7 @@ import counterReducer from '../features/counter/counterSlice';
 import userReducer from '../features/user/userSlice'
 import labelReducer from '../features/labeler/LabelSlice'
 import AdminReducer from '../features/admin/adminSlice'
+import StyleLabelerSlice from '../features/style-labeler/StyleLabelerSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     user: userReducer,
     labeler: labelReducer,
     admin: AdminReducer,
+    styleLabeler: StyleLabelerSlice,
   },
 });
 

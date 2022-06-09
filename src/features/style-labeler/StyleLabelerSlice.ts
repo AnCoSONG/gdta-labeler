@@ -24,35 +24,19 @@ export const contents = [
 export const genderMapping = "男性,女性".split(",");
 export const agesMapping = "青少年,青年,壮年,中年,老年".split(",");
 
-export enum STAGE {
-    ALL = 0,
-    ONLY_VALID = 1,
-    ONLY_STYLE = 2,
-}
-
 export enum ValidType {
     Valid = 0,
     ValidAfterProcessing = 1,
     Invalid = 2,
 }
+
 export type LabelHistory = {
     _id: string;
     img_id: string;
     img_title: string;
     img_src: string;
-    valid: number;
     finished: boolean;
     styles: boolean[];
-    audience_age: boolean[];
-    audience_gender: boolean[];
-};
-
-export type LabelData = {
-    q1: ValidType;
-    // 简约/简洁,科技,复古/古典,卡通/插画,复杂/装饰,写实/摄影,字体设计,其他
-    q2: boolean[];
-    q3: boolean[];
-    q4: boolean[];
 };
 
 export type LabelImage = {
@@ -61,7 +45,6 @@ export type LabelImage = {
     src: string;
     author?: string;
     tags?: Array<string>;
-    labeled_count: number;
     width: number;
     height: number;
     source: string;
@@ -75,8 +58,8 @@ export type LabelDataForMultiple = {
 };
 
 export type LabelDataPayload = {
-    question: "q1" | "q2" | "q3" | "q4";
-    data: number | LabelDataForMultiple;
+    question: "q2";
+    data: LabelDataForMultiple;
 };
 
 type HistoryPayload = {
@@ -87,22 +70,16 @@ type HistoryPayload = {
 type LabelSliceType = {
     history: LabelHistory[];
     count: number;
-    labelData: LabelData;
+    labelData: boolean[];
     labelImage: LabelImage;
     labelImageLoaded: boolean;
     done: boolean;
-    stage: STAGE;
 };
 
 export const initState: LabelSliceType = {
     history: [],
     count: 20,
-    labelData: {
-        q1: 0,
-        q2: [false, false, false, false, false, false, false, false],
-        q3: [false, false],
-        q4: [false, false, false, false, false],
-    },
+    labelData: [false, false, false, false, false, false, false, false],
     labelImage: {
         _id: "",
         title: "",
@@ -111,12 +88,10 @@ export const initState: LabelSliceType = {
         width: 0,
         height: 0,
         project_url: "",
-        labeled_count: 0,
         created_time: "",
     },
     labelImageLoaded: false,
     done: false,
-    stage: STAGE.ONLY_VALID, // change this to make effect on post.
 };
 
 export const fetchImageDataAsync = createAsyncThunk(
@@ -124,7 +99,7 @@ export const fetchImageDataAsync = createAsyncThunk(
     async (labeler_id: string) => {
         // 拿取图片之前先把localStorage清空
         console.log("正在获取新的待打标图像", labeler_id);
-        let response = await axios.get("/task/next", {
+        let response = await axios.get("/valid-tasks/next", {
             params: { labeler_id: labeler_id },
         });
         console.log("fetchImageData", response);
@@ -164,7 +139,7 @@ export const fetchHistoryAsync = createAsyncThunk(
         limit: number;
         query_type: string;
     }) => {
-        let response = await axios.post("/record/list", {
+        let response = await axios.post("/valid-records/list", {
             labeler_id: args.labeler_id,
             page: args.page,
             limit: args.limit,
@@ -189,7 +164,7 @@ export const fetchHistoryAsync = createAsyncThunk(
 export const fetchLabelImageWithIDAsync = createAsyncThunk(
     "labeler/fetchLabelImageWithID",
     async (img_id: string) => {
-        let response = await axios.get(`/imgs/${img_id}`).catch((e) => {
+        let response = await axios.get(`/valid-imgs/${img_id}`).catch((e) => {
             console.error(e.name);
         });
         if (response) {
@@ -214,77 +189,28 @@ export const labelSlice = createSlice({
         setLabelData: (state, action: PayloadAction<LabelDataPayload>) => {
             // console.log(action.type);
             switch (action.payload.question) {
-                case "q1":
-                    if (typeof action.payload.data === "number") {
-                        // q1会清空其他选项
-                        state.labelData = { ...initState.labelData };
-                        state.labelData.q1 = action.payload.data;
-                    } else {
-                        throw new Error("q1 data type error");
-                    }
-                    break;
                 case "q2":
                     if (typeof action.payload.data === "object") {
-                        state.labelData.q2[
+                        state.labelData[
                             (action.payload.data as LabelDataForMultiple).idx
                         ] = (action.payload.data as LabelDataForMultiple).data;
                     } else {
                         throw new Error("q2 data type error");
                     }
                     break;
-                case "q3":
-                    if (typeof action.payload.data === "object") {
-                        state.labelData.q3[
-                            (action.payload.data as LabelDataForMultiple).idx
-                        ] = (action.payload.data as LabelDataForMultiple).data;
-                    } else {
-                        throw new Error("q3 data type error");
-                    }
-                    break;
-                case "q4":
-                    if (typeof action.payload.data === "object") {
-                        state.labelData.q4[
-                            (action.payload.data as LabelDataForMultiple).idx
-                        ] = (action.payload.data as LabelDataForMultiple).data;
-                    } else {
-                        throw new Error("q4 data type error");
-                    }
-                    break;
                 default:
                     break;
             }
         },
-        setLabelDataAsObject: (state, action: PayloadAction<LabelData>) => {
+        setLabelDataAsObject: (state, action: PayloadAction<boolean[]>) => {
             // 这个接口就当成更新数据用的
-            state.labelData = { ...action.payload };
+            state.labelData = [ ...action.payload ];
             console.log(state.labelData);
-        },
-        selectAll: (state, action: PayloadAction<string>) => {
-            switch (action.payload) {
-                case "q3":
-                    const q3hasTrue = state.labelData.q3.some((e) => e);
-                    if (q3hasTrue) {
-                        state.labelData.q3.fill(false);
-                    } else {
-                        state.labelData.q3.fill(true);
-                    }
-                    break;
-                case "q4":
-                    const q4hasTrue = state.labelData.q4.some((e) => e);
-                    if (q4hasTrue) {
-                        state.labelData.q4.fill(false);
-                    } else {
-                        state.labelData.q4.fill(true);
-                    }
-                    break;
-                default:
-                    break;
-            }
         },
         initLabelerState: (state) => {
             state.history = [];
             state.count = initState.count;
-            state.labelData = { ...initState.labelData };
+            state.labelData = [ ...initState.labelData ];
             state.labelImage = { ...initState.labelImage };
             // console.log("inited", state);
         },
@@ -293,9 +219,9 @@ export const labelSlice = createSlice({
         },
         updateHistoryStateAtIdx: (
             state,
-            action: PayloadAction<{ idx: number; valid: ValidType }>
+            action: PayloadAction<{ idx: number; styles: boolean[]}>
         ) => {
-            state.history[action.payload.idx].valid = action.payload.valid;
+            state.history[action.payload.idx].styles = action.payload.styles;
         },
     },
     extraReducers: (builder) => {
@@ -303,7 +229,7 @@ export const labelSlice = createSlice({
             .addCase(fetchImageDataAsync.pending, (state) => {
                 state.labelImageLoaded = false;
                 // 拿新图片，labelData数据要清空
-                state.labelData = { ...initState.labelData };
+                state.labelData = [ ...initState.labelData ];
                 state.labelImage = { ...initState.labelImage };
             })
             .addCase(
@@ -311,6 +237,7 @@ export const labelSlice = createSlice({
                 (state, action: PayloadAction<LabelImage>) => {
                     console.log(action.payload);
                     state.labelImage = { ...action.payload };
+                    // 拿到新图像就把edit模式关掉
                     state.done = false;
                     // state.labelImageLoaded = true;
                     if (action.payload._id === "Thanks") {
@@ -349,7 +276,6 @@ export const {
     initLabelerState,
     setLabelDataAsObject,
     setLabelImageLoadedStatus,
-    selectAll,
     updateHistoryStateAtIdx,
 } = labelSlice.actions;
 export default labelSlice.reducer;

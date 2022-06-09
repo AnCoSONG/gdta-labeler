@@ -1,4 +1,4 @@
-import commonStyles from "../Common.module.scss";
+import commonStyles from "../labeler/Questions/Common.module.scss";
 import { Popover } from "element-react/next";
 import {
     contents,
@@ -6,8 +6,8 @@ import {
     setLabelData,
     stylesMapping,
     ValidType,
-} from "../../LabelSlice";
-import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
+} from "./StyleLabelerSlice";
+import { useAppSelector, useAppDispatch } from "../../app/hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 
@@ -98,3 +98,5 @@ export const Question2 = (prop: PropType) => {
         </div>
     );
 };
+
+export default Question2;

@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import "./App.css";
 import { Admin } from "./features/admin/admin";
 import { Loader } from "./features/loading/loader";
+import { StyleLabeler } from "./features/style-labeler/StyleLabeler";
 const Labeler = React.lazy(() => import("./features/labeler/Labeler"));
 const Login = React.lazy(() => import("./features/login/Login"));
 const Notfound = React.lazy(() => import("./features/notfound/Notfound"));
@@ -31,6 +32,14 @@ function App() {
                     element={
                         <React.Suspense fallback={<Loader />}>
                             <Login />
+                        </React.Suspense>
+                    }
+                ></Route>
+                <Route
+                    path="/style"
+                    element={
+                        <React.Suspense fallback={<Loader />}>
+                            <StyleLabeler />
                         </React.Suspense>
                     }
                 ></Route>

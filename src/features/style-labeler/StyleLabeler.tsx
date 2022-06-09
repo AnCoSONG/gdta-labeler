@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import styles from "./Labeler.module.scss";
+import styles from "../labeler/Labeler.module.scss";
 // import { getDataUrl, seed } from "../../utils";
 import { axios, navigateTo } from "../../utils";
 import { Menu } from "../../comps/Menu";
 import { HistoryItem } from "./HistoryItem";
-import { Q1, Q2, Q3, Q4 } from "./Questions";
+import Q2 from "./Question";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import throttle from "lodash.throttle";
-import { Tag, Dropdown, Checkbox, Radio } from "element-react/next";
+import { Tag, Dropdown, Checkbox } from "element-react/next";
 import {
     faUserFriends,
     faClock,
@@ -28,18 +28,14 @@ import {
 import { error, messageAlert, success, warn } from "../../utils/notify";
 import { setUserInfo, initUserState } from "../user/userSlice";
 import {
-    agesMapping,
     fetchHistoryAsync,
     fetchImageDataAsync,
-    genderMapping,
     initLabelerState,
     LabelHistory,
     setLabelImageLoadedStatus,
-    STAGE,
     stylesMapping,
     updateHistoryStateAtIdx,
-    ValidType,
-} from "./LabelSlice";
+} from "./StyleLabelerSlice";
 import { Loader } from "../loading/loader";
 import { Button, Dialog, Pagination, Popover } from "element-react";
 
@@ -54,10 +50,9 @@ const getTransform = (DOM: Element) => {
     };
 };
 
-export const Labeler = () => {
-    document.title = "有效性打标";
+export const StyleLabeler = () => {
+    document.title = "风格打标";
     const userState = useAppSelector((state) => state.user);
-    const stage = useAppSelector((state) => state.labeler.stage);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
@@ -140,7 +135,6 @@ export const Labeler = () => {
                     navigate("/login");
                 });
         }
-        return () => {}
     }, [dispatch, navigate]);
     // 登录态验证 =========================
 
@@ -152,8 +146,10 @@ export const Labeler = () => {
     // 支持图像的放大查看
     const imgShowerBox = useRef<HTMLDivElement>(null);
     const imgShower = useRef<HTMLImageElement>(null);
-    const labelImage = useAppSelector((state) => state.labeler.labelImage);
-    const imgLoaded = useAppSelector((state) => state.labeler.labelImageLoaded);
+    const labelImage = useAppSelector((state) => state.styleLabeler.labelImage);
+    const imgLoaded = useAppSelector(
+        (state) => state.styleLabeler.labelImageLoaded
+    );
     useEffect(() => {
         if (!imgLoaded) {
             console.log("Labeler: img is not loaded");
@@ -189,7 +185,6 @@ export const Labeler = () => {
             // console.log(imgShower.current!.dataset);
             imgShower.current!.src = imgRef.current!.src; //将图像src赋值给放大器
         }
-        return () => {}
     }, [imgLoaded, labelImage.height, labelImage.width]);
     // 支持图像动态加载和初始化 =========================
 
@@ -274,7 +269,7 @@ export const Labeler = () => {
     const [confirmBtnStatus, setConfirmBtnStatus] = useState<string>("still");
     // 跳过 status: still, loading
     const [skipBtnStatus, setSkipBtnStatus] = useState<string>("still");
-    const labelData = useAppSelector((state) => state.labeler.labelData);
+    const labelData = useAppSelector((state) => state.styleLabeler.labelData);
     const foribidden = useMemo(() => {
         return labelImage.title === "All Done";
     }, [labelImage.title]);
@@ -295,43 +290,26 @@ export const Labeler = () => {
         }
         if (confirmBtnStatus === "still") {
             setConfirmBtnStatus("loading");
-            if (stage === STAGE.ALL || stage === STAGE.ONLY_STYLE) {
-                // check if the image is already labeled
-                if (labelData.q1 !== ValidType.Invalid) {
-                    // 如果其他元素都是false，则说明没有标注过
-                    const isQ2Filled = labelData.q2.some(
-                        (item) => item === true
-                    );
-                    const isQ3Filled = labelData.q3.some(
-                        (item) => item === true
-                    );
-                    const isQ4Filled = labelData.q4.some(
-                        (item) => item === true
-                    );
-                    // const result = isQ2Filled && isQ3Filled && isQ4Filled;
-                    const result = isQ2Filled;
-                    console.log(result, isQ2Filled, isQ3Filled, isQ4Filled);
-                    if (!result) {
-                        error(
-                            "当您认为图像有效时，需要完成在右侧至少完成风格标注"
-                        );
-                        setConfirmBtnStatus("still");
-                        return;
-                    }
-                }
-            } // STAGE.only_valid不做验证
+            // check if the image is already labeled
+            // 如果其他元素都是false，则说明没有标注过
+            const isQ2Filled = labelData.some((item) => item === true);
+            // const result = isQ2Filled && isQ3Filled && isQ4Filled;
+            const result = isQ2Filled;
+            console.log(result, isQ2Filled);
+            if (!result) {
+                error("请至少选择一个风格");
+                setConfirmBtnStatus("still");
+                return;
+            }
             // 上传打标记录
             const res = await axios
-                .post(`/task/finish?stage=${stage}`, {
+                .post(`/valid-tasks/finish`, {
                     img_id: labelImage._id,
                     img_src: labelImage.src,
                     img_title: labelImage.title,
                     labeler_id: userState.id,
-                    valid: labelData.q1,
-                    styles: labelData.q2,
+                    styles: labelData,
                     created_time: labelImage.created_time,
-                    audience_gender: labelData.q3,
-                    audience_age: labelData.q4,
                     finished: true,
                 })
                 .catch((err) => {
@@ -386,16 +364,13 @@ export const Labeler = () => {
                 //* finished: false 实现
                 //* 这种skip会把当前没有打标好的数据也上传，但会标记为unfinished
                 const create_unfinished_res = await axios
-                    .post(`/task/finish?stage=${stage}`, {
+                    .post(`/valid-tasks/finish`, {
                         img_id: labelImage._id,
                         img_src: labelImage.src,
                         img_title: labelImage.title,
                         labeler_id: userState.id,
-                        valid: labelData.q1,
-                        styles: labelData.q2,
+                        styles: labelData,
                         created_time: labelImage.created_time,
-                        audience_gender: labelData.q3,
-                        audience_age: labelData.q4,
                         finished: false,
                     })
                     .catch((err) => {
@@ -445,16 +420,18 @@ export const Labeler = () => {
     const onDropdownHoverGetData = async (e: boolean) => {
         // console.log(e);
         if (e) {
-            const imgCountRes = await axios.get("/imgs/count").catch((e) => {
-                error(e.name);
-                console.error(e);
-            });
+            const imgCountRes = await axios
+                .get("/valid-imgs/count")
+                .catch((e) => {
+                    error(e.name);
+                    console.error(e);
+                });
             if (imgCountRes) {
                 setImgCount(imgCountRes.data.data);
             }
 
             const labeledCountRes = await axios
-                .get("/record/count", {
+                .get("/valid-records/count", {
                     params: {
                         labeler_id: userState.id,
                         finished: true,
@@ -470,7 +447,7 @@ export const Labeler = () => {
             }
 
             const unfinishedCountRes = await axios
-                .get("/record/count", {
+                .get("/valid-records/count", {
                     params: {
                         labeler_id: userState.id,
                         finished: false,
@@ -486,7 +463,7 @@ export const Labeler = () => {
             }
 
             const currentTaskLabeledCountRes = await axios
-                .get("/task/progress", {
+                .get("/valid-tasks/progress", {
                     params: {
                         labeler_id: userState.id,
                     },
@@ -502,7 +479,7 @@ export const Labeler = () => {
             }
 
             const currentTaskImgCountRes = await axios
-                .get("/task/count", {
+                .get("/valid-tasks/count", {
                     params: {
                         labeler_id: userState.id,
                     },
@@ -519,12 +496,12 @@ export const Labeler = () => {
     //? 已标注 / 全部, 已跳过 信息获取和展示 ====================
 
     //? 历史记录 =================
-    const historyState = useAppSelector((state) => state.labeler.history);
+    const historyState = useAppSelector((state) => state.styleLabeler.history);
     const [historyOn, setHistoryOn] = useState(false);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
-    const countState = useAppSelector((state) => state.labeler.count);
+    const countState = useAppSelector((state) => state.styleLabeler.count);
     const [finishedSelected, setFinishedSelected] = useState(true);
     const [skippedSelected, setSkippedSelected] = useState(true);
     const query_type = useMemo(() => {
@@ -587,73 +564,19 @@ export const Labeler = () => {
         }
     }, [dialogCurrentData]);
 
-    const dialogStyles = useMemo(() => {
+    const checkboxStyles = useMemo(() => {
+        const checked: string[] = [];
         if (dialogCurrentData) {
-            const res = dialogCurrentData.styles.reduce((acc, cur, idx) => {
-                // console.log(acc, cur, idx)
-                if (cur) {
-                    return stylesMapping[idx] + " " + acc;
-                } else {
-                    return acc;
+            dialogCurrentData.styles.forEach((item, index) => {
+                if (item) {
+                    checked.push(index.toString());
                 }
-            }, "");
-            // console.log(res);
-            if (res === "") {
-                return "未标注";
-            }
-            return res.trim();
-        } else {
-            return "Unknown";
+            });
         }
+        return checked;
     }, [dialogCurrentData]);
 
-    const dialogGenders = useMemo(() => {
-        if (dialogCurrentData) {
-            const res = dialogCurrentData.audience_gender.reduce(
-                (acc, cur, idx) => {
-                    // console.log(acc, cur, idx)
-                    if (cur) {
-                        return acc + " " + genderMapping[idx];
-                    } else {
-                        return acc;
-                    }
-                },
-                ""
-            );
-            // console.log(res);
-            if (res === "") {
-                return "未标注";
-            }
-            return res.trim();
-        } else {
-            return "Unknown";
-        }
-    }, [dialogCurrentData]);
-
-    const dialogAges = useMemo(() => {
-        if (dialogCurrentData) {
-            const res = dialogCurrentData.audience_age.reduce(
-                (acc, cur, idx) => {
-                    // console.log(acc, cur, idx)
-                    if (cur) {
-                        return acc + " " + agesMapping[idx];
-                    } else {
-                        return acc;
-                    }
-                },
-                ""
-            );
-            // console.log(res);
-            if (res === "") {
-                return "未标注";
-            }
-            return res.trim();
-        } else {
-            return "Unknown";
-        }
-    }, [dialogCurrentData]);
-
-    const done = useAppSelector((state) => state.labeler.done);
+    const done = useAppSelector((state) => state.styleLabeler.done);
 
     // todo: 优化至labelerSlice
     const [finishedTasks, setFinishedTasks] = useState<
@@ -667,7 +590,7 @@ export const Labeler = () => {
     useEffect(() => {
         if (done) {
             axios
-                .get("/task/getFinishedTask", {
+                .get("/valid-tasks/getFinishedTask", {
                     params: {
                         labeler_id: userState.id,
                     },
@@ -694,20 +617,15 @@ export const Labeler = () => {
     }
 
     // 对话框内编辑
-    const handleRadioGroupChange = (value: ValidType) => {
-        if (dialogCurrentData) {
-            setDialogCurrentData({ ...dialogCurrentData, valid: value });
-        }
-    };
 
-    const handleValidationSave = async () => {
+    const handleEditSave = async () => {
         if (dialogCurrentData) {
             // 如果有变化
             const res = await axios
-                .post(`/task/updateRecord`, {
+                .post(`/valid-tasks/updateRecord`, {
                     img_id: dialogCurrentData.img_id,
                     labeler_id: userState.id,
-                    valid: dialogCurrentData.valid,
+                    styles: dialogCurrentData.styles,
                 })
                 .catch((err) => {
                     error(err.name);
@@ -719,7 +637,7 @@ export const Labeler = () => {
                 dispatch(
                     updateHistoryStateAtIdx({
                         idx: dialogCurrentDataIndex,
-                        valid: dialogCurrentData.valid,
+                        styles: dialogCurrentData.styles,
                     })
                 );
                 setTimeout(() => {
@@ -743,14 +661,14 @@ export const Labeler = () => {
                             setHistoryOn(true);
                         }}
                     ></Menu>
-                    <div className={styles.logo}>GDTA 有效性打标工具</div>
+                    <div className={styles.logo}>GDTA 风格打标工具</div>
                     <div
                         className={styles.btn}
                         onClick={() => {
-                            navigate("/style");
+                            navigate("/");
                         }}
                     >
-                        切换至：风格打标
+                        切换至：有效性打标
                     </div>
                 </div>
                 <div className={styles.right}>
@@ -1084,20 +1002,14 @@ export const Labeler = () => {
                                 ref={labelCardsWrapperRef}
                                 // style={{ height: `${calcedHeight.current}px` }}
                             >
-                                <Q1
+                                {/* <Q1
                                     onDoubleClick={(e: React.MouseEvent) => {
                                         if (stage === STAGE.ONLY_VALID) {
                                             onConfirmClick(e);
                                         }
                                     }}
-                                />
-                                {stage !== STAGE.ONLY_VALID && (
-                                    <>
-                                        <Q2 no={2}/>
-                                        <Q3 />
-                                        <Q4 />
-                                    </>
-                                )}
+                                /> */}
+                                <Q2 no={1}></Q2>
                             </div>
                             <div className={styles.label_confirm}>
                                 <div
@@ -1448,90 +1360,6 @@ export const Labeler = () => {
                                                 styles.dialog_conntent_info_name
                                             }
                                         >
-                                            是否有效
-                                        </div>
-                                        <div
-                                            className={
-                                                styles.dialog_conntent_info_data
-                                            }
-                                            style={{
-                                                color:
-                                                    dialogCurrentData.valid <
-                                                    ValidType.Invalid
-                                                        ? "green"
-                                                        : "red",
-                                            }}
-                                        >
-                                            {(() => {
-                                                switch (
-                                                    dialogCurrentData.valid
-                                                ) {
-                                                    case ValidType.Valid:
-                                                        return "有效";
-                                                    case ValidType.ValidAfterProcessing:
-                                                        return "处理后有效";
-                                                    case ValidType.Invalid:
-                                                        return "无效";
-                                                    default:
-                                                        return "未知";
-                                                }
-                                            })()}
-                                        </div>
-                                    </div>
-                                    <div
-                                        className={
-                                            styles.dialog_content_info_wrapper
-                                        }
-                                    >
-                                        <div
-                                            className={
-                                                styles.dialog_conntent_info_name
-                                            }
-                                        >
-                                            是否有效
-                                        </div>
-                                        <div
-                                            className={
-                                                styles.dialog_conntent_info_data
-                                            }
-                                        >
-                                            <Radio.Group
-                                                value={dialogCurrentData.valid}
-                                                onChange={(value) => {
-                                                    // console.log(value);
-                                                    handleRadioGroupChange(
-                                                        value as ValidType
-                                                    );
-                                                }}
-                                            >
-                                                <Radio value={ValidType.Valid}>
-                                                    有效
-                                                </Radio>
-                                                <Radio
-                                                    value={
-                                                        ValidType.ValidAfterProcessing
-                                                    }
-                                                >
-                                                    处理后有效
-                                                </Radio>
-                                                <Radio
-                                                    value={ValidType.Invalid}
-                                                >
-                                                    无效
-                                                </Radio>
-                                            </Radio.Group>
-                                        </div>
-                                    </div>
-                                    <div
-                                        className={
-                                            styles.dialog_content_info_wrapper
-                                        }
-                                    >
-                                        <div
-                                            className={
-                                                styles.dialog_conntent_info_name
-                                            }
-                                        >
                                             风格
                                         </div>
                                         <div
@@ -1539,47 +1367,42 @@ export const Labeler = () => {
                                                 styles.dialog_conntent_info_data
                                             }
                                         >
-                                            {dialogStyles}
-                                        </div>
-                                    </div>
-                                    <div
-                                        className={
-                                            styles.dialog_content_info_wrapper
-                                        }
-                                    >
-                                        <div
-                                            className={
-                                                styles.dialog_conntent_info_name
-                                            }
-                                        >
-                                            受众性别
-                                        </div>
-                                        <div
-                                            className={
-                                                styles.dialog_conntent_info_data
-                                            }
-                                        >
-                                            {dialogGenders}
-                                        </div>
-                                    </div>
-                                    <div
-                                        className={
-                                            styles.dialog_content_info_wrapper
-                                        }
-                                    >
-                                        <div
-                                            className={
-                                                styles.dialog_conntent_info_name
-                                            }
-                                        >
-                                            受众年龄
-                                        </div>
-                                        <div
-                                            className={
-                                                styles.dialog_conntent_info_data
-                                            }
-                                        >
-                                            {dialogAges}
+                                            <Checkbox.Group
+                                                value={checkboxStyles}
+                                                onChange={(value) => {
+                                                    console.log(value);
+                                                    const numberValue: number[] =
+                                                        value.map(
+                                                            (item: string) =>
+                                                                parseInt(item)
+                                                        );
+                                                    const newStyles = new Array(
+                                                        8
+                                                    )
+                                                        .fill(false)
+                                                        .map((item, index) => {
+                                                            return numberValue.includes(
+                                                                index
+                                                            );
+                                                        });
+                                                    setDialogCurrentData({
+                                                        ...dialogCurrentData,
+                                                        styles: newStyles,
+                                                    });
+                                                }}
+                                            >
+                                                {stylesMapping.map(
+                                                    (item, index) => {
+                                                        return (
+                                                            <Checkbox
+                                                                label={index.toString()}
+                                                            >
+                                                                {item}
+                                                            </Checkbox>
+                                                        );
+                                                    }
+                                                )}
+                                            </Checkbox.Group>
                                         </div>
                                     </div>
                                 </div>
@@ -1595,7 +1418,7 @@ export const Labeler = () => {
                         type="primary"
                         onClick={async () => {
                             setDialogConfirmLoading(true);
-                            await handleValidationSave();
+                            await handleEditSave();
                             setDialogConfirmLoading(false);
                         }}
                     >
@@ -1618,7 +1441,7 @@ export const Labeler = () => {
                         onClick={(e) => setHistoryOn(false)}
                     ></Menu>
                     <div className={styles.sidebar_title_main}>
-                        <div>有效性历史记录</div>
+                        <div>风格打标历史记录</div>
                         <Dropdown
                             hideOnClick={false}
                             menu={
@@ -1667,7 +1490,6 @@ export const Labeler = () => {
                         historyState.map((item, index) => {
                             return (
                                 <HistoryItem
-                                    stage={STAGE.ONLY_VALID}
                                     onClick={(e) => {
                                         setDialogCurrentDataIndex(index);
                                         // setDialogCurrentData(item);
@@ -1679,10 +1501,7 @@ export const Labeler = () => {
                                     img_id={item.img_id}
                                     img_title={item.img_title}
                                     img_src={item.img_src}
-                                    valid={item.valid}
                                     styles={item.styles}
-                                    audience_age={item.audience_age}
-                                    audience_gender={item.audience_gender}
                                 />
                             );
                         })
@@ -1732,4 +1551,4 @@ export const Labeler = () => {
     );
 };
 
-export default Labeler;
+export default StyleLabeler;

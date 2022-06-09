@@ -42,3 +42,7 @@ export const range = (start: number, end:number, gap:number) => {
     }
     return result;
 }
+
+export const navigateTo = (url: string) => {
+    window.open(url, "_blank");
+};
