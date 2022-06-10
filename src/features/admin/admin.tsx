@@ -40,6 +40,7 @@ import {
 } from "./adminSlice";
 
 export const Admin = () => {
+    document.title = "管理面板";
     const userState = useAppSelector((state) => state.user);
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
