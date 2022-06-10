@@ -140,7 +140,7 @@ export const Labeler = () => {
                     navigate("/login");
                 });
         }
-        return () => {}
+        return () => {};
     }, [dispatch, navigate]);
     // 登录态验证 =========================
 
@@ -189,7 +189,7 @@ export const Labeler = () => {
             // console.log(imgShower.current!.dataset);
             imgShower.current!.src = imgRef.current!.src; //将图像src赋值给放大器
         }
-        return () => {}
+        return () => {};
     }, [imgLoaded, labelImage.height, labelImage.width]);
     // 支持图像动态加载和初始化 =========================
 
@@ -733,6 +733,8 @@ export const Labeler = () => {
         }
     };
 
+    const [saveBtnText, setSaveBtnText] = useState("保存编辑");
+
     return (
         <div className={styles.wrapper}>
             <nav className={styles.nav}>
@@ -1093,7 +1095,7 @@ export const Labeler = () => {
                                 />
                                 {stage !== STAGE.ONLY_VALID && (
                                     <>
-                                        <Q2 no={2}/>
+                                        <Q2 no={2} />
                                         <Q3 />
                                         <Q4 />
                                     </>
@@ -1592,11 +1594,19 @@ export const Labeler = () => {
                         取消
                     </Button>
                     <Button
-                        type="primary"
+                        type={
+                            saveBtnText === "保存编辑" ? "primary" : "success"
+                        }
                         onClick={async () => {
-                            setDialogConfirmLoading(true);
-                            await handleValidationSave();
-                            setDialogConfirmLoading(false);
+                            if (saveBtnText === "保存编辑") {
+                                setDialogConfirmLoading(true);
+                                await handleValidationSave();
+                                setDialogConfirmLoading(false);
+                                setSaveBtnText("已保存!");
+                                setTimeout(() => {
+                                    setSaveBtnText("保存编辑");
+                                }, 1000);
+                            }
                         }}
                     >
                         {dialogConfirmLoading ? (
@@ -1605,7 +1615,7 @@ export const Labeler = () => {
                                 spin
                             ></FontAwesomeIcon>
                         ) : (
-                            "保存编辑"
+                            saveBtnText
                         )}
                     </Button>
                 </Dialog.Footer>
