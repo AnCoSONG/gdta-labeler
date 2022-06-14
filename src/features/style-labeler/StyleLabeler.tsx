@@ -1424,7 +1424,7 @@ export const StyleLabeler = () => {
                         onClick={async () => {
                             if (saveBtnText === "保存编辑") {
                                 setDialogConfirmLoading(true);
-                                await handleEditSave();
+                                await handleEditSave(true);
                                 setDialogConfirmLoading(false);
                                 setSaveBtnText("已保存!");
                                 setTimeout(() => {
