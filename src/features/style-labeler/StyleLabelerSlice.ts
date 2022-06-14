@@ -219,9 +219,10 @@ export const labelSlice = createSlice({
         },
         updateHistoryStateAtIdx: (
             state,
-            action: PayloadAction<{ idx: number; styles: boolean[]}>
+            action: PayloadAction<{ idx: number; styles: boolean[], finished: boolean}>
         ) => {
             state.history[action.payload.idx].styles = action.payload.styles;
+            state.history[action.payload.idx].finished = action.payload.finished;
         },
     },
     extraReducers: (builder) => {

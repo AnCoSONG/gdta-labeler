@@ -639,6 +639,7 @@ export const StyleLabeler = () => {
                     updateHistoryStateAtIdx({
                         idx: dialogCurrentDataIndex,
                         styles: dialogCurrentData.styles,
+                        finished,
                     })
                 );
                 setTimeout(() => {
