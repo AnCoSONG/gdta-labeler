@@ -618,7 +618,7 @@ export const StyleLabeler = () => {
 
     // 对话框内编辑
 
-    const handleEditSave = async () => {
+    const handleEditSave = async (finished=false) => {
         if (dialogCurrentData) {
             // 如果有变化
             const res = await axios
@@ -626,6 +626,7 @@ export const StyleLabeler = () => {
                     img_id: dialogCurrentData.img_id,
                     labeler_id: userState.id,
                     styles: dialogCurrentData.styles,
+                    finished,
                 })
                 .catch((err) => {
                     error(err.name);
@@ -650,6 +651,8 @@ export const StyleLabeler = () => {
             }
         }
     };
+
+    const [saveBtnText, setSaveBtnText] = useState("保存编辑");
 
     return (
         <div className={styles.wrapper}>
@@ -1415,11 +1418,19 @@ export const StyleLabeler = () => {
                         取消
                     </Button>
                     <Button
-                        type="primary"
+                        type={
+                            saveBtnText === "保存编辑" ? "primary" : "success"
+                        }
                         onClick={async () => {
-                            setDialogConfirmLoading(true);
-                            await handleEditSave();
-                            setDialogConfirmLoading(false);
+                            if (saveBtnText === "保存编辑") {
+                                setDialogConfirmLoading(true);
+                                await handleEditSave();
+                                setDialogConfirmLoading(false);
+                                setSaveBtnText("已保存!");
+                                setTimeout(() => {
+                                    setSaveBtnText("保存编辑");
+                                }, 1000);
+                            }
                         }}
                     >
                         {dialogConfirmLoading ? (
@@ -1428,7 +1439,7 @@ export const StyleLabeler = () => {
                                 spin
                             ></FontAwesomeIcon>
                         ) : (
-                            "保存编辑"
+                            saveBtnText
                         )}
                     </Button>
                 </Dialog.Footer>

@@ -945,8 +945,10 @@ export const Admin = () => {
                                                     className={styles.task}
                                                     key={task._id}
                                                     onClick={() => {
-                                                        setTaskIdxToShow(index);
-                                                        setTaskDetailVisible(
+                                                        setStyleTaskIdxToShow(
+                                                            index
+                                                        );
+                                                        setStyleTaskDetailVisible(
                                                             true
                                                         );
                                                     }}
