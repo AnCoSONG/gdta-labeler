@@ -24,7 +24,7 @@ export const Question2 = (prop: PropType) => {
             data-inactive={valid === ValidType.Invalid}
         >
             <div className={commonStyles.question_card_title}>
-               {prop.no}. 这幅作品属于哪些风格?(多选)
+               {prop.no}. 这幅作品属于哪些风格?(多选，可只选一个)
             </div>
             <div className={commonStyles.question_card_content}>
                 <ul className={commonStyles.tags}>
