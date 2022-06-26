@@ -419,8 +419,8 @@ export const StyleLabeler = () => {
         [imgCount, labeledCount, unfinishedCount]
     );
     const currentTaskToBeLabeledCount = useMemo(
-        () => currentTaskData.range[1] - currentTaskData.progress,
-        [currentTaskData]
+        () => currentTaskImgCount - currentTaskData.progress,
+        [currentTaskData.progress, currentTaskImgCount]
     );
 
     const onDropdownHoverGetData = async (e: boolean) => {
