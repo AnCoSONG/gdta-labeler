@@ -798,27 +798,29 @@ export const StyleLabeler = () => {
                                         管理面板
                                     </Dropdown.Item>
                                 )}
-                                {currentTaskImgCount != null && (
-                                    <>
-                                        <Dropdown.Item divided>
-                                            当前任务范围 [
-                                            {currentTaskData.range[0]},{" "}
-                                            {currentTaskData.range[1]})
-                                        </Dropdown.Item>
-                                        <Dropdown.Item>
-                                            当前任务共完成/跳过{" "}
-                                            {currentTaskData.progress} 张
-                                        </Dropdown.Item>
-                                        <Dropdown.Item>
-                                            当前任务共 {currentTaskImgCount} 张
-                                        </Dropdown.Item>
-                                        <Dropdown.Item>
-                                            当前任务还有{" "}
-                                            {currentTaskToBeLabeledCount}张
-                                            待标注
-                                        </Dropdown.Item>
-                                    </>
-                                )}
+                                {currentTaskImgCount != null &&
+                                    currentTaskImgCount > 0 && (
+                                        <>
+                                            <Dropdown.Item divided>
+                                                当前任务范围 [
+                                                {currentTaskData.range[0]},{" "}
+                                                {currentTaskData.range[1]})
+                                            </Dropdown.Item>
+                                            <Dropdown.Item>
+                                                当前任务共完成/跳过{" "}
+                                                {currentTaskData.progress} 张
+                                            </Dropdown.Item>
+                                            <Dropdown.Item>
+                                                当前任务共 {currentTaskImgCount}{" "}
+                                                张
+                                            </Dropdown.Item>
+                                            <Dropdown.Item>
+                                                当前任务还有{" "}
+                                                {currentTaskToBeLabeledCount}张
+                                                待标注
+                                            </Dropdown.Item>
+                                        </>
+                                    )}
                                 <Dropdown.Item divided>
                                     共完成 {labeledCount} 张
                                 </Dropdown.Item>
