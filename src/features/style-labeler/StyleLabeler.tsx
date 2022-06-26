@@ -406,90 +406,88 @@ export const StyleLabeler = () => {
     const [imgCount, setImgCount] = useState(0);
     const [labeledCount, setLabeledCount] = useState(0);
     const [unfinishedCount, setUnfinishedCount] = useState(0);
-    const [currentTaskLabeledCount, setCurrentTaskLabeledCount] = useState(0);
-    const [currentTaskImgCount, setCurrentTaskImgCount] = useState(0);
+    const [currentTaskData, setCurrentTaskData] = useState({
+        range: [0, 0],
+        progress: 0,
+    });
+    const currentTaskImgCount = useMemo(
+        () => currentTaskData.range[1] - currentTaskData.range[0],
+        [currentTaskData]
+    );
     const toBeLabeledCount = useMemo(
         () => imgCount - labeledCount - unfinishedCount,
         [imgCount, labeledCount, unfinishedCount]
     );
     const currentTaskToBeLabeledCount = useMemo(
-        () => currentTaskImgCount - currentTaskLabeledCount,
-        [currentTaskImgCount, currentTaskLabeledCount]
+        () => currentTaskData.range[1] - currentTaskData.progress,
+        [currentTaskData]
     );
 
     const onDropdownHoverGetData = async (e: boolean) => {
         // console.log(e);
         if (e) {
-            const imgCountRes = await axios
-                .get("/valid-imgs/count")
-                .catch((e) => {
+            const [
+                imgCountRes,
+                labeledCountRes,
+                unfinishedCountRes,
+                currentTask,
+            ] = await Promise.all([
+                axios.get("/valid-imgs/count").catch((e) => {
                     error(e.name);
                     console.error(e);
-                });
+                    return null;
+                }),
+                axios
+                    .get("/valid-records/count", {
+                        params: {
+                            labeler_id: userState.id,
+                            finished: true,
+                        },
+                    })
+                    .catch((e) => {
+                        error(e.name);
+                        console.error(e);
+                        return null;
+                    }),
+                axios
+                    .get("/valid-records/count", {
+                        params: {
+                            labeler_id: userState.id,
+                            finished: false,
+                        },
+                    })
+                    .catch((e) => {
+                        error(e.name);
+                        console.error(e);
+                        return null;
+                    }),
+                axios
+                    .get("/valid-tasks/getCurrentTask", {
+                        params: {
+                            labeler_id: userState.id,
+                        },
+                    })
+                    .catch((e) => {
+                        error(e.name);
+                        console.error(e);
+                        return null;
+                    }),
+            ]);
             if (imgCountRes) {
                 setImgCount(imgCountRes.data.data);
             }
-
-            const labeledCountRes = await axios
-                .get("/valid-records/count", {
-                    params: {
-                        labeler_id: userState.id,
-                        finished: true,
-                    },
-                })
-                .catch((e) => {
-                    error(e.name);
-                    console.error(e);
-                });
-
             if (labeledCountRes) {
                 setLabeledCount(labeledCountRes.data.data);
             }
-
-            const unfinishedCountRes = await axios
-                .get("/valid-records/count", {
-                    params: {
-                        labeler_id: userState.id,
-                        finished: false,
-                    },
-                })
-                .catch((e) => {
-                    error(e.name);
-                    console.error(e);
-                });
-
             if (unfinishedCountRes) {
                 setUnfinishedCount(unfinishedCountRes.data.data);
             }
 
-            const currentTaskLabeledCountRes = await axios
-                .get("/valid-tasks/progress", {
-                    params: {
-                        labeler_id: userState.id,
-                    },
-                })
-                .catch((e) => {
-                    error(e.name);
-                    console.error(e);
+            if (currentTask) {
+                setCurrentTaskData({
+                    range: currentTask.data.data.range,
+                    progress: currentTask.data.data.progress,
                 });
-            if (currentTaskLabeledCountRes) {
-                setCurrentTaskLabeledCount(
-                    currentTaskLabeledCountRes.data.data
-                );
-            }
-
-            const currentTaskImgCountRes = await axios
-                .get("/valid-tasks/count", {
-                    params: {
-                        labeler_id: userState.id,
-                    },
-                })
-                .catch((e) => {
-                    error(e.name);
-                    console.error(e);
-                });
-            if (currentTaskImgCountRes) {
-                setCurrentTaskImgCount(currentTaskImgCountRes.data.data);
             }
         }
     };
@@ -618,7 +616,7 @@ export const StyleLabeler = () => {
 
     // 对话框内编辑
 
-    const handleEditSave = async (finished=false) => {
+    const handleEditSave = async (finished = false) => {
         if (dialogCurrentData) {
             // 如果有变化
             const res = await axios
@@ -801,8 +799,13 @@ export const StyleLabeler = () => {
                                 {currentTaskImgCount != null && (
                                     <>
                                         <Dropdown.Item divided>
+                                            当前任务范围 [
+                                            {currentTaskData.range[0]},{" "}
+                                            {currentTaskData.range[1]})
+                                        </Dropdown.Item>
+                                        <Dropdown.Item>
                                             当前任务共完成/跳过{" "}
-                                            {currentTaskLabeledCount} 张
+                                            {currentTaskData.progress} 张
                                         </Dropdown.Item>
                                         <Dropdown.Item>
                                             当前任务共 {currentTaskImgCount} 张
