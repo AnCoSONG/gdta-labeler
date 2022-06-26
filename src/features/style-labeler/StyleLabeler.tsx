@@ -484,10 +484,12 @@ export const StyleLabeler = () => {
             }
 
             if (currentTask) {
-                setCurrentTaskData({
-                    range: currentTask.data.data.range,
-                    progress: currentTask.data.data.progress,
-                });
+                if (currentTask.data.data) {
+                    setCurrentTaskData({
+                        range: currentTask.data.data.range,
+                        progress: currentTask.data.data.progress,
+                    });
+                }
             }
         }
     };
