@@ -2,6 +2,7 @@ import {
     faAdd,
     faAsterisk,
     faCode,
+    faHandDots,
     faHomeAlt,
     faIdBadge,
     faIdCardAlt,
@@ -499,6 +500,30 @@ export const Admin = () => {
                                                       ></FontAwesomeIcon>
                                                       &nbsp;&nbsp;
                                                       {labeler.count} 张
+                                                  </div>
+                                                  <div
+                                                      className={
+                                                          styles.admin_wrapper_content_main_card_text
+                                                      }
+                                                  >
+                                                      {" "}
+                                                      <FontAwesomeIcon
+                                                          icon={faHandDots}
+                                                      ></FontAwesomeIcon>
+                                                      &nbsp;&nbsp;
+                                                      ✅ 完成{labeler.style_count_finished}张
+                                                  </div>
+                                                  <div
+                                                      className={
+                                                          styles.admin_wrapper_content_main_card_text
+                                                      }
+                                                  >
+                                                      {" "}
+                                                      <FontAwesomeIcon
+                                                          icon={faHandDots}
+                                                      ></FontAwesomeIcon>
+                                                      &nbsp;&nbsp;
+                                                      ❌ 跳过{labeler.style_count_unfinished}张
                                                   </div>
                                                   <div
                                                       className={

@@ -9,6 +9,8 @@ interface User {
     avatar: string;
     invitecode: string;
     count: number;
+    style_count_finished: number;
+    style_count_unfinished: number;
 }
 
 interface Task {
