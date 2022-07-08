@@ -34,7 +34,6 @@ import {
     LabelHistory,
     setLabelImageLoadedStatus,
     stylesMapping,
-    updateHistoryStateAtIdx,
     updateHistoryStateWithId,
 } from "./StyleLabelerSlice";
 import { Loader } from "../loading/loader";
