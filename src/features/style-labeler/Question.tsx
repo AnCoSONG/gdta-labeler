@@ -33,6 +33,7 @@ export const Question2 = (prop: PropType) => {
                             <li
                                 className={commonStyles.tag}
                                 data-selected={state[index]}
+                                key={stylesMapping[index]}
                                 onClick={() =>
                                     dispatch(
                                         setLabelData({
@@ -59,6 +60,7 @@ export const Question2 = (prop: PropType) => {
                                     }
                                     trigger="hover"
                                     content={contents[index]}
+                                    width={200}
                                 >
                                     <span className={commonStyles.tag_info}>
                                         <FontAwesomeIcon
