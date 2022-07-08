@@ -1588,12 +1588,13 @@ export const StyleLabeler = () => {
                                 type="primary"
                                 onClick={async () => {
                                     // same as refresh history
+                                    setPage(1);
                                     setHistoryLoading(true);
                                     console.log(query_type);
                                     await dispatch(
                                         fetchStyleHistoryAsync({
                                             labeler_id: userState.id,
-                                            page,
+                                            page: 1,
                                             limit,
                                             query_type: query_type,
                                             img_id: queryImageId,
@@ -1612,13 +1613,14 @@ export const StyleLabeler = () => {
                                 type="success"
                                 onClick={async () => {
                                     setQueryImageId("")
+                                    setPage(1);
                                     // same as refresh history
                                     setHistoryLoading(true);
                                     console.log(query_type);
                                     await dispatch(
                                         fetchStyleHistoryAsync({
                                             labeler_id: userState.id,
-                                            page,
+                                            page: 1,
                                             limit,
                                             query_type: query_type,
                                             img_id: "",
