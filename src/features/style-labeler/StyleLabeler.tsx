@@ -1264,6 +1264,7 @@ export const StyleLabeler = () => {
                 visible={dialogVisible}
                 title={dialogTitle}
                 size="small"
+                top="0"
                 onCancel={() => {
                     setDialogVisible(false);
                 }}
