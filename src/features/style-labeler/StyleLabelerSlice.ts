@@ -131,19 +131,21 @@ export const fetchImageDataAsync = createAsyncThunk(
     }
 );
 
-export const fetchHistoryAsync = createAsyncThunk(
-    "labeler/fetchHistory",
+export const fetchStyleHistoryAsync = createAsyncThunk(
+    "labeler/fetchStyleHistory",
     async (args: {
         labeler_id: string;
         page: number;
         limit: number;
         query_type: string;
+        img_id: string;
     }) => {
         let response = await axios.post("/valid-records/list", {
             labeler_id: args.labeler_id,
             page: args.page,
             limit: args.limit,
             query_type: args.query_type,
+            img_id: args.img_id
         });
         if (response.status === 201 || response.status === 200) {
             console.log("fetch history async response", response);
@@ -224,6 +226,14 @@ export const labelSlice = createSlice({
             state.history[action.payload.idx].styles = action.payload.styles;
             state.history[action.payload.idx].finished = action.payload.finished;
         },
+        updateHistoryStateWithId: (
+            state,
+            action: PayloadAction<{record_id: string, styles: boolean[], finished: boolean}>
+        ) => {
+            const idx = state.history.findIndex((item) => item._id === action.payload.record_id) // 找到Idx
+            state.history[idx].styles = action.payload.styles;
+            state.history[idx].finished = action.payload.finished;
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -247,9 +257,9 @@ export const labelSlice = createSlice({
                     }
                 }
             )
-            .addCase(fetchHistoryAsync.pending, (state) => {})
+            .addCase(fetchStyleHistoryAsync.pending, (state) => {})
             .addCase(
-                fetchHistoryAsync.fulfilled,
+                fetchStyleHistoryAsync.fulfilled,
                 (state, action: PayloadAction<HistoryPayload>) => {
                     console.log("history", action.payload);
                     state.history = [...action.payload.history];
@@ -278,5 +288,6 @@ export const {
     setLabelDataAsObject,
     setLabelImageLoadedStatus,
     updateHistoryStateAtIdx,
+    updateHistoryStateWithId
 } = labelSlice.actions;
 export default labelSlice.reducer;

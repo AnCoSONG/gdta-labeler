@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import styles from "../labeler/Labeler.module.scss";
+import styles from "./StyleLabeler.module.scss";
 // import { getDataUrl, seed } from "../../utils";
 import { axios, navigateTo } from "../../utils";
 import { Menu } from "../../comps/Menu";
@@ -28,16 +28,17 @@ import {
 import { error, messageAlert, success, warn } from "../../utils/notify";
 import { setUserInfo, initUserState } from "../user/userSlice";
 import {
-    fetchHistoryAsync,
+    fetchStyleHistoryAsync,
     fetchImageDataAsync,
     initLabelerState,
     LabelHistory,
     setLabelImageLoadedStatus,
     stylesMapping,
-    updateHistoryStateAtIdx,
+    updateHistoryStateWithId,
 } from "./StyleLabelerSlice";
 import { Loader } from "../loading/loader";
-import { Button, Dialog, Pagination, Popover } from "element-react";
+import { Button, Dialog, Input, Pagination, Popover } from "element-react";
+import { v4 } from "uuid";
 
 const getTransform = (DOM: Element) => {
     let arr = getComputedStyle(DOM).transform.split(",");
@@ -504,6 +505,7 @@ export const StyleLabeler = () => {
     const countState = useAppSelector((state) => state.styleLabeler.count);
     const [finishedSelected, setFinishedSelected] = useState(true);
     const [skippedSelected, setSkippedSelected] = useState(true);
+    const [queryImageId, setQueryImageId] = useState("");
     const query_type = useMemo(() => {
         if (finishedSelected && skippedSelected) {
             return "all";
@@ -522,11 +524,12 @@ export const StyleLabeler = () => {
                 setHistoryLoading(true);
                 console.log(query_type);
                 await dispatch(
-                    fetchHistoryAsync({
+                    fetchStyleHistoryAsync({
                         labeler_id: userState.id,
                         page,
                         limit,
                         query_type: query_type,
+                        img_id: queryImageId,
                     })
                 ).catch((e) => {
                     error(e.name);
@@ -537,15 +540,66 @@ export const StyleLabeler = () => {
             };
             refreshHistory();
         }
+        
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dispatch, query_type, historyOn, limit, page, userState.id]);
 
     useEffect(() => {
+        setQueryImageId(""); // init query image id when open or close history panel
         if (historyOn) {
             setPage(1); // 设到第一页
         }
     }, [historyOn]);
 
     //? 历史记录 =================
+
+    //! 历史记录页内类别筛选 =============
+
+    // todo: 实现类别筛选(前端) & (WIP) ID筛选(后端)
+    const [labelsFilter, setLabelsFilter] = useState([
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+    ]);
+    const filteredHistoryState = useMemo(() => {
+        // console.log('filterhistorystate updated', labelsFilter)
+        // 类别Filter
+        const isAllFalse = labelsFilter.every((e) => !e);
+        if (isAllFalse) {
+            return historyState;
+        } else {
+            // 获取true的位置
+            const trueIndices = labelsFilter
+                .map((item, idx) => (item ? idx : -1))
+                .filter((e) => e >= 0);
+            return historyState.filter((item) => {
+                for (const idx of trueIndices) {
+                    if (item.styles[idx]) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+    }, [historyState, labelsFilter]);
+
+    const checkBoxFilters = useMemo(() => {
+        // console.log('checkboxfilter updated', labelsFilter)
+        const res = [];
+        const trueIndices = labelsFilter
+            .map((item, idx) => (item ? idx : -1))
+            .filter((e) => e >= 0);
+        for (const idx of trueIndices) {
+            res.push(stylesMapping[idx]);
+        }
+        return res;
+    }, [labelsFilter]);
+    //! 历史记录页内类别筛选 =============
 
     //? 打开dialog ====================
     const [dialogVisible, setDialogVisible] = useState(false);
@@ -554,15 +608,15 @@ export const StyleLabeler = () => {
     const [dialogConfirmLoading, setDialogConfirmLoading] = useState(false);
     useEffect(() => {
         // console.log(dialogCurrentDataIndex);
-        setDialogCurrentData(historyState[dialogCurrentDataIndex]);
-    }, [dialogCurrentDataIndex, historyState]);
+        setDialogCurrentData(filteredHistoryState[dialogCurrentDataIndex]);
+    }, [dialogCurrentDataIndex, filteredHistoryState]);
     const dialogTitle = useMemo(() => {
         if (dialogCurrentData) {
-            return `"${dialogCurrentData.img_title}"的标注记录`;
+            return `"${dialogCurrentData.img_title}"的标注记录 - 当前位置:${dialogCurrentDataIndex + 1}/${filteredHistoryState.length}`;
         } else {
             return "未知标注记录";
         }
-    }, [dialogCurrentData]);
+    }, [dialogCurrentData, dialogCurrentDataIndex, filteredHistoryState.length]);
 
     const checkboxStyles = useMemo(() => {
         const checked: string[] = [];
@@ -620,7 +674,7 @@ export const StyleLabeler = () => {
 
     const handleEditSave = async (finished = false) => {
         if (dialogCurrentData) {
-            // 如果有变化
+            // 更新数据库记录
             const res = await axios
                 .post(`/valid-tasks/updateRecord`, {
                     img_id: dialogCurrentData.img_id,
@@ -636,17 +690,24 @@ export const StyleLabeler = () => {
                 console.log("updateRecord", res);
                 // 更新history state里面的值
                 dispatch(
-                    updateHistoryStateAtIdx({
-                        idx: dialogCurrentDataIndex,
+                    updateHistoryStateWithId({
+                        record_id: dialogCurrentData._id,
                         styles: dialogCurrentData.styles,
                         finished,
                     })
                 );
+                // dispatch(
+                //     updateHistoryStateAtIdx({
+                //         idx: dialogCurrentDataIndex,
+                //         styles: dialogCurrentData.styles,
+                //         finished,
+                //     })
+                // );
                 setTimeout(() => {
                     console.log(
                         dialogCurrentDataIndex,
                         dialogCurrentData,
-                        historyState[dialogCurrentDataIndex]
+                        filteredHistoryState[dialogCurrentDataIndex]
                     );
                 }, 0);
             }
@@ -1310,7 +1371,7 @@ export const StyleLabeler = () => {
                                         onClick={() => {
                                             if (
                                                 dialogCurrentDataIndex ===
-                                                historyState.length - 1
+                                                filteredHistoryState.length - 1
                                             ) {
                                                 return;
                                             }
@@ -1329,7 +1390,7 @@ export const StyleLabeler = () => {
                                         style={{
                                             color:
                                                 dialogCurrentDataIndex ===
-                                                historyState.length - 1
+                                                filteredHistoryState.length - 1
                                                     ? "#ccc"
                                                     : "#000",
                                         }}
@@ -1408,6 +1469,7 @@ export const StyleLabeler = () => {
                                                         return (
                                                             <Checkbox
                                                                 label={index.toString()}
+                                                                key={v4()}
                                                             >
                                                                 {item}
                                                             </Checkbox>
@@ -1494,7 +1556,7 @@ export const StyleLabeler = () => {
                         >
                             <div className={styles.sidebar_title_query_control}>
                                 <span>
-                                    Query type{" "}
+                                    检索类型{" "}
                                     <FontAwesomeIcon
                                         icon={faCaretDown}
                                     ></FontAwesomeIcon>
@@ -1503,11 +1565,130 @@ export const StyleLabeler = () => {
                         </Dropdown>
                     </div>
                 </div>
+                <div className={styles.sidebar_filters}>
+                    <div className={styles.sidebar_filter_item}>
+                        <div className={styles.sidebar_filter_item_title}>
+                            图像ID
+                        </div>
+                        <div className={styles.sidebar_filter_item_content}>
+                            <Input
+                                value={queryImageId}
+                                style={{ flex: 1, marginRight: "10px" }}
+                                icon="search"
+                                placeholder="输入想找的图像ID"
+                                onBlur={(e) => {
+                                    // setQueryImageId(e.target.value);
+                                    console.log(e);
+                                }}
+                                onChange={(e) => {
+                                    //@ts-ignore
+                                    setQueryImageId(e);
+                                }}
+                            />
+                            <Button
+                                type="primary"
+                                onClick={async () => {
+                                    // same as refresh history
+                                    setPage(1);
+                                    setHistoryLoading(true);
+                                    console.log(query_type);
+                                    await dispatch(
+                                        fetchStyleHistoryAsync({
+                                            labeler_id: userState.id,
+                                            page: 1,
+                                            limit,
+                                            query_type: query_type,
+                                            img_id: queryImageId,
+                                        })
+                                    ).catch((e) => {
+                                        error(e.name);
+                                        console.error(e);
+                                        setHistoryLoading(false);
+                                    });
+                                    setHistoryLoading(false);
+                                }}
+                            >
+                                搜索
+                            </Button>
+                            <Button
+                                type="success"
+                                onClick={async () => {
+                                    setQueryImageId("")
+                                    setPage(1);
+                                    // same as refresh history
+                                    setHistoryLoading(true);
+                                    console.log(query_type);
+                                    await dispatch(
+                                        fetchStyleHistoryAsync({
+                                            labeler_id: userState.id,
+                                            page: 1,
+                                            limit,
+                                            query_type: query_type,
+                                            img_id: "",
+                                        })
+                                    ).catch((e) => {
+                                        error(e.name);
+                                        console.error(e);
+                                        setHistoryLoading(false);
+                                    });
+                                    setHistoryLoading(false);
+                                }}
+                            >
+                                还原
+                            </Button>
+                        </div>
+                    </div>
+                    <div className={styles.sidebar_filter_item}>
+                        <div className={styles.sidebar_filter_item_title}>
+                            标注类别
+                        </div>
+                        <div className={styles.sidebar_filter_item_content}>
+                            <Checkbox.Group
+                                value={checkBoxFilters}
+                                onChange={(value) => {
+                                    const newLabelsFilter = new Array(8).fill(
+                                        false
+                                    );
+                                    for (const v of value) {
+                                        // console.log(v)
+                                        const idx = stylesMapping.findIndex(
+                                            (item) => item === v
+                                        );
+                                        // console.log(idx)
+                                        newLabelsFilter[idx] = true;
+                                    }
+                                    // console.log(newLabelsFilter)
+                                    setLabelsFilter(newLabelsFilter);
+                                }}
+                            >
+                                {stylesMapping.map((item, index) => {
+                                    return (
+                                        <Checkbox
+                                            key={v4()}
+                                            label={item}
+                                            // onChange={(e) => {
+                                            //     const temp = [...labelsFilter];
+                                            //     temp[index] = !temp[index]
+                                            //     setLabelsFilter(temp)
+                                            //     console.log(labelsFilter)
+                                            // }}
+                                        >
+                                            {item}
+                                        </Checkbox>
+                                    );
+                                })}
+                            </Checkbox.Group>
+                        </div>
+                    </div>
+                    {/* <div className={styles.sidebar_filter_item}>
+                        <div className={styles.sidebar_filter_item_control}>按以上条件过滤当前页内数据</div>
+                    </div> */}
+                </div>
                 <div className={styles.sidebar_flexbox}>
                     {historyLoading ? (
                         <Loader />
-                    ) : historyState.length > 0 ? (
-                        historyState.map((item, index) => {
+                    ) : filteredHistoryState.length > 0 ? (
+                        filteredHistoryState.map((item, index) => {
                             return (
                                 <HistoryItem
                                     onClick={(e) => {
@@ -1515,6 +1696,7 @@ export const StyleLabeler = () => {
                                         // setDialogCurrentData(item);
                                         setDialogVisible(true);
                                     }}
+                                    idx={index}
                                     key={item._id}
                                     _id={item._id}
                                     finished={item.finished}
@@ -1564,7 +1746,7 @@ export const StyleLabeler = () => {
                             }
                         }}
                     />
-                    <div className={styles.page_count}>共 {countState} 条</div>
+                    <div className={styles.page_count}>共 {countState} 条, 过滤后本页共展示 {filteredHistoryState.length} 条</div>
                 </div>
             </div>
         </div>
