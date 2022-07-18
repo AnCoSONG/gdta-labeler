@@ -630,6 +630,20 @@ export const StyleLabeler = () => {
         return checked;
     }, [dialogCurrentData]);
 
+    const styleText = useMemo(() => {
+        let text = ""
+        if (dialogCurrentData) {
+            dialogCurrentData.styles.forEach((item, index) => {
+                if (item) {
+                    text += stylesMapping[index]
+                    text += "、"
+                }
+            });
+        }
+        text = text.slice(0, -1)
+        return text
+    }, [dialogCurrentData]);
+
     const done = useAppSelector((state) => state.styleLabeler.done);
 
     // todo: 优化至labelerSlice
@@ -1395,6 +1409,9 @@ export const StyleLabeler = () => {
                                                     : "#000",
                                         }}
                                     ></FontAwesomeIcon>
+                                </div>
+                                <div className={styles.dialog_content_left_right}>
+                                    {styleText}
                                 </div>
                                 <div className={styles.dialog_content_cover}>
                                     <img
