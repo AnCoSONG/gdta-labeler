@@ -39,6 +39,7 @@ import {
 import { Loader } from "../loading/loader";
 import { Button, Dialog, Input, Pagination, Popover } from "element-react";
 import { v4 } from "uuid";
+import { LazyLoadImage } from "react-lazy-load-image-component";
 
 const getTransform = (DOM: Element) => {
     let arr = getComputedStyle(DOM).transform.split(",");
@@ -540,7 +541,7 @@ export const StyleLabeler = () => {
             };
             refreshHistory();
         }
-        
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dispatch, query_type, historyOn, limit, page, userState.id]);
 
@@ -606,17 +607,26 @@ export const StyleLabeler = () => {
     const [dialogCurrentDataIndex, setDialogCurrentDataIndex] = useState(0);
     const [dialogCurrentData, setDialogCurrentData] = useState<LabelHistory>();
     const [dialogConfirmLoading, setDialogConfirmLoading] = useState(false);
+    const [dialogImgLoaded, setDialogImgLoaded] = useState(false);
     useEffect(() => {
         // console.log(dialogCurrentDataIndex);
+        setDialogImgLoaded(false);
         setDialogCurrentData(filteredHistoryState[dialogCurrentDataIndex]);
     }, [dialogCurrentDataIndex, filteredHistoryState]);
+
     const dialogTitle = useMemo(() => {
         if (dialogCurrentData) {
-            return `"${dialogCurrentData.img_title}"的标注记录 - 当前位置:${dialogCurrentDataIndex + 1}/${filteredHistoryState.length}`;
+            return `"${dialogCurrentData.img_title}"的标注记录 - 当前位置:${
+                dialogCurrentDataIndex + 1
+            }/${filteredHistoryState.length}`;
         } else {
             return "未知标注记录";
         }
-    }, [dialogCurrentData, dialogCurrentDataIndex, filteredHistoryState.length]);
+    }, [
+        dialogCurrentData,
+        dialogCurrentDataIndex,
+        filteredHistoryState.length,
+    ]);
 
     const checkboxStyles = useMemo(() => {
         const checked: string[] = [];
@@ -631,17 +641,17 @@ export const StyleLabeler = () => {
     }, [dialogCurrentData]);
 
     const styleText = useMemo(() => {
-        let text = ""
+        let text = "";
         if (dialogCurrentData) {
             dialogCurrentData.styles.forEach((item, index) => {
                 if (item) {
-                    text += stylesMapping[index]
-                    text += "、"
+                    text += stylesMapping[index];
+                    text += "、";
                 }
             });
         }
-        text = text.slice(0, -1)
-        return text
+        text = text.slice(0, -1);
+        return text;
     }, [dialogCurrentData]);
 
     const done = useAppSelector((state) => state.styleLabeler.done);
@@ -1065,7 +1075,7 @@ export const StyleLabeler = () => {
                                         src={labelImage.src}
                                         alt=""
                                         onLoad={() => {
-                                            console.log("onload");
+                                            // console.log("onload");
                                             // setImgLoaded(true)
                                             dispatch(
                                                 setLabelImageLoadedStatus(true)
@@ -1358,7 +1368,12 @@ export const StyleLabeler = () => {
                                     <FontAwesomeIcon
                                         icon={faAngleLeft}
                                         onClick={() => {
+                                            if (!dialogImgLoaded) {
+                                                alert("请等待图片加载完成");
+                                                return;
+                                            }
                                             if (dialogCurrentDataIndex === 0) {
+                                                alert("已经是第一张图片了");
                                                 return;
                                             }
                                             setDialogCurrentDataIndex(
@@ -1383,10 +1398,15 @@ export const StyleLabeler = () => {
                                     <FontAwesomeIcon
                                         icon={faAngleRight}
                                         onClick={() => {
+                                            if (!dialogImgLoaded) {
+                                                alert("请等待图片加载完成");
+                                                return;
+                                            }
                                             if (
                                                 dialogCurrentDataIndex ===
                                                 filteredHistoryState.length - 1
                                             ) {
+                                                alert("已经是最后一张图片了");
                                                 return;
                                             }
                                             setDialogCurrentDataIndex(
@@ -1410,14 +1430,24 @@ export const StyleLabeler = () => {
                                         }}
                                     ></FontAwesomeIcon>
                                 </div>
-                                <div className={styles.dialog_content_left_right}>
+                                <div
+                                    className={styles.dialog_content_left_right}
+                                >
                                     {styleText}
                                 </div>
                                 <div className={styles.dialog_content_cover}>
-                                    <img
+                                    <LazyLoadImage
+                                        className={
+                                            styles.dialog_content_cover_img
+                                        }
                                         src={dialogCurrentData.img_src}
                                         alt={dialogCurrentData.img_title}
+                                        onLoad={() => {
+                                            // console.log('onload')
+                                            setDialogImgLoaded(true);
+                                        }}
                                     />
+                                    {!dialogImgLoaded && <Loader />}
                                 </div>
                                 <div className={styles.dialog_content_info}>
                                     <div
@@ -1630,7 +1660,7 @@ export const StyleLabeler = () => {
                             <Button
                                 type="success"
                                 onClick={async () => {
-                                    setQueryImageId("")
+                                    setQueryImageId("");
                                     setPage(1);
                                     // same as refresh history
                                     setHistoryLoading(true);
@@ -1763,7 +1793,10 @@ export const StyleLabeler = () => {
                             }
                         }}
                     />
-                    <div className={styles.page_count}>共 {countState} 条, 过滤后本页共展示 {filteredHistoryState.length} 条</div>
+                    <div className={styles.page_count}>
+                        共 {countState} 条, 过滤后本页共展示{" "}
+                        {filteredHistoryState.length} 条
+                    </div>
                 </div>
             </div>
         </div>

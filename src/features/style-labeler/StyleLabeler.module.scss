@@ -305,8 +305,9 @@
         flex-flow: nowrap;
         align-items: center;
         justify-content: space-around;
+        position: relative;
 
-        img {
+        img, .dialog_content_cover_img {
             width: 100%;
             max-width: 400px;
             height: auto;
