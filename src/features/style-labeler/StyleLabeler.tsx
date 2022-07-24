@@ -610,9 +610,13 @@ export const StyleLabeler = () => {
     const [dialogImgLoaded, setDialogImgLoaded] = useState(false);
     useEffect(() => {
         // console.log(dialogCurrentDataIndex);
-        setDialogImgLoaded(false);
         setDialogCurrentData(filteredHistoryState[dialogCurrentDataIndex]);
     }, [dialogCurrentDataIndex, filteredHistoryState]);
+
+    // index change make img reload, not filtered history state
+    useEffect(() => {
+        setDialogImgLoaded(false);
+    }, [dialogCurrentDataIndex])
 
     const dialogTitle = useMemo(() => {
         if (dialogCurrentData) {
@@ -1373,7 +1377,7 @@ export const StyleLabeler = () => {
                                                 return;
                                             }
                                             if (dialogCurrentDataIndex === 0) {
-                                                alert("已经是第一张图片了");
+                                                alert("已经是当前页面第一张图片了");
                                                 return;
                                             }
                                             setDialogCurrentDataIndex(
@@ -1406,7 +1410,7 @@ export const StyleLabeler = () => {
                                                 dialogCurrentDataIndex ===
                                                 filteredHistoryState.length - 1
                                             ) {
-                                                alert("已经是最后一张图片了");
+                                                alert("已经是当前页面最后一张图片了");
                                                 return;
                                             }
                                             setDialogCurrentDataIndex(
